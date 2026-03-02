@@ -26,17 +26,17 @@ import time
 import requests
 import websocket
 
-DEBUG_URL = "http://127.0.0.1:9222/json"
+DEBUG_URL = "http://localhost:9222/json"
 TOKEN_KEYS = ["token", "access_token", "id_token"]
+# Okta stores tokens as JSON under this key; nested path: accessToken.accessToken
+OKTA_TOKEN_KEY = "okta-token-storage"
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), "data", "token.txt")
 DASHBOARD_URL = (
-    "https://insights.netskope.io/pdv/release/prod/dashboard"
-    "?releaseVersion=135.0&releaseDay=Day+1&application=DP"
+    "https://insights.netskope.io/pdv/release/prod/dashboard?releaseVersion=135.0&releaseDay=Day+1&application=DP"
 )
 
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "data", "config.json")
-DEFAULT_PROFILE_PATH = r"C:\Users\AustinCheng\AppData\Local\Google\Chrome\User Data\Profile 2"
 
 
 def _load_config() -> dict:
@@ -46,15 +46,21 @@ def _load_config() -> dict:
     return {}
 
 
+DEFAULT_USER_DATA_DIR = r"\temp1\debug-profile"
+
+
 def _launch_chrome():
-    print(1)
     config = _load_config()
-    profile_path = config.get("chrome_profile_path", DEFAULT_PROFILE_PATH)
-    #chromium_path = r"C:\app\chrome\chrome.exe"
-    chromium_path = r"start chrome"
-    cmd = f'{chromium_path} --user-data-dir="{profile_path}" --remote-debugging-port=9222 "{DASHBOARD_URL}"'
-    print(f"[util_token] Launching Chrome with {cmd}")
-    subprocess.Popen(cmd, shell=True)
+    user_data_dir = config.get("user_data_dir", DEFAULT_USER_DATA_DIR)
+    cmd = (
+        f'start chrome'
+        f' --user-data-dir="{user_data_dir}"'
+        f' --remote-debugging-port=9222'
+        f' --remote-allow-origins=*'
+        f' "{DASHBOARD_URL}"'
+    )
+    print(f"[util_token] Launching Chrome with: {cmd}")
+    subprocess.Popen(f'cmd /c {cmd}', shell=True)
     
 
 def get_token_from_browser(debug_url: str = DEBUG_URL) -> str | None:
@@ -112,7 +118,17 @@ def get_token_from_browser(debug_url: str = DEBUG_URL) -> str | None:
     try:
         ws = websocket.create_connection(ws_url, timeout=5)
 
-        js = " || ".join(f"localStorage.getItem('{k}')" for k in TOKEN_KEYS)
+        # Try simple flat keys first, then dig into okta-token-storage
+        flat_keys_js = " || ".join(f"localStorage.getItem('{k}')" for k in TOKEN_KEYS)
+        okta_js = (
+            "(function(){"
+            f"var raw=localStorage.getItem('{OKTA_TOKEN_KEY}');"
+            "if(!raw)return null;"
+            "try{var o=JSON.parse(raw);return (o.accessToken&&o.accessToken.accessToken)||null;}"
+            "catch(e){return null;}"
+            "})()"
+        )
+        js = f"{flat_keys_js} || {okta_js}"
         ws.send(json.dumps({"id": 1, "method": "Runtime.evaluate", "params": {"expression": js}}))
         result = json.loads(ws.recv())
         ws.close()
@@ -123,20 +139,34 @@ def get_token_from_browser(debug_url: str = DEBUG_URL) -> str | None:
     token = result.get("result", {}).get("result", {}).get("value")
 
     if not token:
-        # Helpful debug: list all localStorage keys
+        # Helpful debug: dump all localStorage keys and values to cache/
         try:
             ws2 = websocket.create_connection(ws_url, timeout=5)
             ws2.send(json.dumps({
                 "id": 2, "method": "Runtime.evaluate",
-                "params": {"expression": "Object.keys(localStorage).join(', ')"}
+                "params": {
+                    "expression": (
+                        "JSON.stringify(Object.fromEntries("
+                        "Object.keys(localStorage).map(k => [k, (() => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return localStorage.getItem(k); } })()]))"
+                        ")"
+                    )
+                }
             }))
-            keys_result = json.loads(ws2.recv())
+            dump_result = json.loads(ws2.recv())
             ws2.close()
-            keys = keys_result.get("result", {}).get("result", {}).get("value", "")
+            raw = dump_result.get("result", {}).get("result", {}).get("value", "{}")
+            parsed = json.loads(raw) if raw else {}
+            keys = list(parsed.keys())
             print(f"[util_token] Token not found under keys {TOKEN_KEYS}.\n"
-                  f"  Available localStorage keys: {keys}")
-        except Exception:
-            print(f"[util_token] Token not found under keys {TOKEN_KEYS}.")
+                  f"  Available localStorage keys: {', '.join(keys)}")
+            cache_dir = os.path.join(os.path.dirname(__file__), "cache")
+            os.makedirs(cache_dir, exist_ok=True)
+            dump_path = os.path.join(cache_dir, "localStorage_dump.json")
+            with open(dump_path, "w", encoding="utf-8") as f:
+                json.dump(parsed, f, indent=2)
+            print(f"[util_token] Full localStorage dumped to {dump_path}")
+        except Exception as exc:
+            print(f"[util_token] Token not found under keys {TOKEN_KEYS}. (dump failed: {exc})")
         return None
 
     # Strip 'Bearer ' prefix if present
