@@ -69,27 +69,14 @@ python pdv_parser.py 135.0 prod --show-all-comp
 | `day_number` | `1`, `2`, `3`, `4` | Day number (for `preprod` or `prod`) |
 | `--show-all-comp` | (flag) | Show all components (default: only client/nsclient) |
 
-## Folder Structure
+## Output example
+<img width="1567" height="821" alt="image" src="https://github.com/user-attachments/assets/f69afb2e-db78-4726-a950-a7318ee9c5aa" />
 
-```
-pdv_parser/
-├── pdv_parser.py          # Main script
-├── requirements.txt       # Python dependencies
-├── data/                  # Required config (do NOT delete)
-│   ├── releases.json      # Version → release_day_id mapping
-│   ├── dc_mapping.json    # Manual datacenter GUID → name mapping
-│   └── token.txt          # Cached Bearer token (JWT)
-└── cache/                 # Purgeable output (safe to delete)
-    ├── dc_names.json      # Auto-discovered DC name cache
-    ├── full_response_*.json
-    ├── component_data_*.json
-    └── probe_*.json
-```
 
 ## Target Components
 
 | Name | GUID |
 |------|------|
-| NSClient | `d5f1a252-05e9-4679-9be1-aaecd106de1a` |
-| NSClient2 | `0d055ea2-fcaa-4c60-94b0-c3165a8956b8` |
-| Client | `33809b17-a76b-4531-b8fd-272e5a90680b` |
+| NSClient d5f1 | `d5f1a252-05e9-4679-9be1-aaecd106de1a` |
+| NSClient 0d05 | `0d055ea2-fcaa-4c60-94b0-c3165a8956b8` |
+| Client 3380 | `33809b17-a76b-4531-b8fd-272e5a90680b` |
