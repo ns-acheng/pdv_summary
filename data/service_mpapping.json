@@ -1,0 +1,15 @@
+{
+    "d5f1a252-05e9-4679-9be1-aaecd106de1a": "NSClient d5f1",
+    "33809b17-a76b-4531-b8fd-272e5a90680b": "Client 3380",
+    "02267c3a-bdb0-4473-9b05-d8a3276eb6b6": "Client 0226",
+    "629af967-8407-4cd1-927c-57dc6d46b232": "AppInfo",
+    "3b9ee907-3864-4c2e-aa01-920b44d6bd3c": "Atos",
+    "543b32a0-f41b-4fb4-b11c-99fe71d536c8": "DLP",
+    "17db0937-e461-447a-98ae-fd34e3beec94": "NGIPS",
+    "b395300f-afef-477a-a7a5-1142616b571f": "NPA_API_GW",
+    "f2eb6d57-f113-4d03-b362-cbf37506bc39": "Phoenix",
+    "cd742c2f-0bb2-4356-95b4-c4604bca811e": "Provisioner",
+    "3bd80c33-35ef-417f-a399-c12e45b079f3": "ProxyChaining",
+    "2f650480-67a1-4f1d-9267-f7daa4a05aa9": "RBI",
+    "3bcdd42e-7cca-4ad0-a88d-d2b54de274d6": "SMTPProxy"
+}
