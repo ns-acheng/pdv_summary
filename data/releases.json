@@ -31,6 +31,18 @@
       {"label": "prod day 4",   "release_day_id": 1209, "env": "prod",    "dashboard": "release"}
     ]
   },
+  "133": {
+    "days": [
+      {"label": "staging",       "release_day_id": 1023, "env": "preprod", "dashboard": "staging-release"},
+      {"label": "preprod day 1", "release_day_id": 1024, "env": "preprod", "dashboard": "staging-release"},
+      {"label": "preprod day 2", "release_day_id": 1025, "env": "preprod", "dashboard": "staging-release"},
+      {"label": "preprod day 3", "release_day_id": 1048, "env": "preprod", "dashboard": "staging-release"},
+      {"label": "prod day 1",   "release_day_id": 1026, "env": "prod",    "dashboard": "release"},
+      {"label": "prod day 2",   "release_day_id": 1027, "env": "prod",    "dashboard": "release"},
+      {"label": "prod day 3",   "release_day_id": 1028, "env": "prod",    "dashboard": "release"},
+      {"label": "prod day 4",   "release_day_id": 1029, "env": "prod",    "dashboard": "release"}
+    ]
+  },
   "104.0": {
     "days": [
       {"label": "staging",      "release_day_id": 1219, "env": "preprod", "dashboard": "staging-release"},
