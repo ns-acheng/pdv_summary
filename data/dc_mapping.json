@@ -25,7 +25,7 @@
   "305438b9-61e3-4049-8a6d-caff923bc9a9": "SV5",
   "31450151-a460-4de0-ac31-30f7990f1692": "LON3",
   "33809b17-a76b-4531-b8fd-272e5a90680b": "SJC1",
-  "354a08ac-6544-4fb9-8045-c28cf9d607cf": "TLV1?",
+  "354a08ac-6544-4fb9-8045-c28cf9d607cf": "TLV1",
   "384143d8-2cef-42be-acfb-9c1ed54856ca": "RUH1",
   "38d582b2-d644-42ea-82a4-b6a82d9775e7": "stg01-mplegacy",
   "3bcf4872-777d-4283-8707-20a3b39b2762": "prc01-dp-preprod",
@@ -147,9 +147,9 @@
   "f7972569-7d06-42b3-b6e7-f6c2e43ce7a9": "SYD1",
   "f8ab85cd-b8c8-4af7-9e51-e7c2e0eb66f2": "MEL2",
   "f97f185b-048d-4e50-aebb-287e921d2f51": "AM2",
-  "ff3b9e3f-8b0b-442a-b530-f1da334137f2": "TLV1?",
+  "ff3b9e3f-8b0b-442a-b530-f1da334137f2": "UNKONWN",
   "3bd80c33-35ef-417f-a399-c12e45b079f3": "MNL1",
   "3f098ef3-42db-47b8-8fdb-b7f669944969": "SEA1",
-  "8a307f4a-abf4-4460-93a5-3bd625b8dfd3": "MEL1-HKG1",
-  "999ccad9-8665-4296-b3e8-ddfec1247b84": "MEL1-HKG1 1"
+  "8a307f4a-abf4-4460-93a5-3bd625b8dfd3": "MEL1",
+  "999ccad9-8665-4296-b3e8-ddfec1247b84": "HKG1"
 }
