@@ -341,7 +341,9 @@ def _build_dc_rows(datacenters: dict, dc_names: dict):
         ]
 
     rows = []
-    for dc_id, dc_info in datacenters.items():
+    # Sort by datacenter name if available, otherwise by UUID
+    dc_items = sorted(datacenters.items(), key=lambda x: (dc_names.get(x[0]) or x[0]).lower())
+    for dc_id, dc_info in dc_items:
         if dc_id == "__type_hint__":
             continue
         pdv = dc_info.get("pdvRun", {})
