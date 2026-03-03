@@ -1,57 +1,2430 @@
 {
   "135.0": {
     "days": [
-      {"label": "staging",      "release_day_id": 1219, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 1", "release_day_id": 1210, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 2", "release_day_id": 1211, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "prod day 1",   "release_day_id": 1212, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 2",   "release_day_id": 1213, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 3",   "release_day_id": 1214, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 4",   "release_day_id": 1215, "env": "prod",    "dashboard": "release"}
+      {
+        "label": "staging",
+        "release_day_id": 1219,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1210,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 1211,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1212,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1213,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1214,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1215,
+        "env": "prod",
+        "dashboard": "release"
+      }
     ]
   },
   "134.0": {
     "days": [
-      {"label": "staging",      "release_day_id": 1118, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 1", "release_day_id": 1112, "env": "preprod", "dashboard": "release"},
-      {"label": "preprod day 2", "release_day_id": 1113, "env": "preprod", "dashboard": "release"},
-      {"label": "prod day 1",   "release_day_id": 1114, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 2",   "release_day_id": 1115, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 3",   "release_day_id": 1116, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 4",   "release_day_id": 1117, "env": "prod",    "dashboard": "release"}
+      {
+        "label": "staging",
+        "release_day_id": 1118,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1112,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 1113,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1114,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1115,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1116,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1117,
+        "env": "prod",
+        "dashboard": "release"
+      }
     ]
   },
   "134.1": {
     "days": [
-      {"label": "staging",      "release_day_id": 1204, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 1", "release_day_id": 1205, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "prod day 1",   "release_day_id": 1206, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 2",   "release_day_id": 1207, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 3",   "release_day_id": 1208, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 4",   "release_day_id": 1209, "env": "prod",    "dashboard": "release"}
+      {
+        "label": "staging",
+        "release_day_id": 1204,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1205,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1206,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1207,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1208,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1209,
+        "env": "prod",
+        "dashboard": "release"
+      }
     ]
   },
   "133.0": {
     "days": [
-      {"label": "staging",       "release_day_id": 1023, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 1", "release_day_id": 1024, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 2", "release_day_id": 1025, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 3", "release_day_id": 1048, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "prod day 1",   "release_day_id": 1026, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 2",   "release_day_id": 1027, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 3",   "release_day_id": 1028, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 4",   "release_day_id": 1029, "env": "prod",    "dashboard": "release"}
+      {
+        "label": "staging",
+        "release_day_id": 1023,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1024,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 1025,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 3",
+        "release_day_id": 1048,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1026,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1027,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1028,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1029,
+        "env": "prod",
+        "dashboard": "release"
+      }
     ]
   },
   "104.0": {
     "days": [
-      {"label": "staging",      "release_day_id": 1219, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 1", "release_day_id": 1210, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "preprod day 2", "release_day_id": 1211, "env": "preprod", "dashboard": "staging-release"},
-      {"label": "prod day 1",   "release_day_id": 12, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 2",   "release_day_id": 14, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 3",   "release_day_id": 15, "env": "prod",    "dashboard": "release"},
-      {"label": "prod day 4",   "release_day_id": 16, "env": "prod",    "dashboard": "release"}
+      {
+        "label": "staging",
+        "release_day_id": 3,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 4,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 5,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 12,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 14,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 15,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 16,
+        "env": "prod",
+        "dashboard": "release"
+      }
     ]
-  }  
+  },
+  "105.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 17,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 18,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 24,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 20,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 21,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 27,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 28,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "105.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 25,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 26,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 29,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 30,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 31,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "106.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 32,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 37,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 38,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 35,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 36,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 54,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 53,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "106.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 47,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 48,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 56,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 57,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 55,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 58,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "107.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 40,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 41,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 46,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 59,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 60,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 62,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 39,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "107.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 52,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 63,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 65,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 64,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 74,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 75,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "108.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 70,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 77,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 73,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 78,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 79,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 80,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 81,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "108.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 86,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 83,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 87,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 2,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 85,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "109.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 6,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 7,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 19,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 11,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 22,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 23,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 13,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "109.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 33,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 34,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 42,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 43,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 44,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "110.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 49,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 51,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 50,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 61,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 66,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 45,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 69,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "111.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 71,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 67,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 68,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 72,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 76,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 82,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 84,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "111.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 88,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 89,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 90,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 91,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 93,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 94,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 92,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "112.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 95,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 102,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 112,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 108,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 128,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 129,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 111,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "113.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 114,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 118,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 131,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 132,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 115,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 116,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 117,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "113.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 133,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 134,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 135,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 136,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 137,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 142,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "114.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 147,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 144,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 145,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 8,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 96,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 9,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 97,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "115.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 10,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 98,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 99,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 100,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 101,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 113,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 109,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 5",
+        "release_day_id": 110,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "115.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 119,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 120,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 121,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 122,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "116.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 130,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 151,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 157,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 156,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 138,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 139,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 140,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "116.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 158,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 159,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 160,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 161,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 162,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "117.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 163,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 164,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 165,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 172,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 173,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 175,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 174,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "117.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 178,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 179,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 181,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 182,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 183,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 184,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "118.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 193,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 189,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 190,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 191,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 199,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 202,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 192,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "118.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 200,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 201,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 203,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 204,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 205,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "119.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 213,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 211,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 212,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 214,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 215,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 216,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 217,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "119.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 218,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 219,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 220,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 221,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 222,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "120.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 229,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 232,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 233,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 234,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 301,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 285,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 286,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "120.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 297,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 308,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 313,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 314,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 315,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "121.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 319,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 306,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 307,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 332,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 333,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 337,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 344,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "122.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 346,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 347,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 348,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 357,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 358,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 359,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 360,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "122.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 397,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 405,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 406,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 407,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 408,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 409,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 410,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "123.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 429,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 445,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 448,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 458,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 465,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 461,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 463,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "124.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 479,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 477,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 478,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 485,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 486,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 487,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 488,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "124.1": {
+    "days": [
+      {
+        "label": "preprod day 1",
+        "release_day_id": 492,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 497,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 498,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 501,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "125.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 502,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 503,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 504,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 516,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 517,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 519,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 520,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "125.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 521,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 538,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 536,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 537,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 542,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "125.2": {
+    "days": [
+      {
+        "label": "prod day 1",
+        "release_day_id": 544,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 587,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "126.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 568,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 569,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 570,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 580,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 581,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 582,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 583,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "127.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 601,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 599,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 600,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 612,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 613,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 614,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 615,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "127.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 629,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 630,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 631,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 632,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 633,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 634,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "128.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 635,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 642,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 643,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 664,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 665,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 666,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 667,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "128.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 677,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 678,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 682,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 683,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 684,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "129.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 685,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 686,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 687,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 705,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 706,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 707,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 708,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "129.0.tether": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 709,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 710,
+        "env": "preprod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "129.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 720,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 723,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 740,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 741,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 742,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "130.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 749,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 750,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 751,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 769,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 770,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 771,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 772,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "130.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 845,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 846,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 847,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 848,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 849,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 850,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "130.1.tether": {
+    "days": [
+      {
+        "label": "preprod day 1",
+        "release_day_id": 872,
+        "env": "preprod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "131.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 851,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 852,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 853,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 862,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 863,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 864,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 865,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "131.0.tether": {
+    "days": [
+      {
+        "label": "preprod day 1",
+        "release_day_id": 871,
+        "env": "preprod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "131.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 924,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 925,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 926,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 927,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 928,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "132.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 938,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 930,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 931,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 932,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 933,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 934,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 935,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "133.0.7": {
+    "days": [
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1064,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1065,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1067,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "133.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 1097,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1092,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1093,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1094,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1095,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1096,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  },
+  "133.1.4": {
+    "days": [
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1119,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1120,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1121,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
+  }
 }

@@ -19,6 +19,11 @@ DC_CACHE_FILE = os.path.join(CACHE_DIR, "dc_names.json")
 RELEASES_FILE = os.path.join(DATA_DIR, "releases.json")
 DC_MAPPING_FILE = os.path.join(DATA_DIR, "dc_mapping.json")
 
+# Dashboard IDs we care about for release syncing
+#   1  = "release"         (prod + preprod days for the main release)
+#  16  = "staging-release"  (staging day)
+SYNC_DASHBOARD_IDS = {1: "release", 16: "staging-release"}
+
 def load_target_components():
     try:
         with open(SERVICE_MAPPING_FILE, "r", encoding="utf-8") as f:
@@ -58,6 +63,192 @@ def day_to_profile(version: str, day: dict) -> dict:
         "releaseType":    env,
         "releaseVersion": version,
     }
+
+
+# ── Release sync from API ─────────────────────────────────────────────────────
+
+def _sync_headers(token: str, dashboard: str = "release", env: str = "prod") -> dict:
+    """Build HTTP headers for release-sync API calls."""
+    if dashboard == "staging-release":
+        page = "/pdv/staging-release/staging/dashboard"
+    else:
+        page = f"/pdv/{dashboard}/{env}/dashboard"
+    x_auth = f"page={page}; dashboard={dashboard}; env={env}"
+    return {
+        "accept": "application/json, text/plain, */*",
+        "authorization": f"Bearer {token}",
+        "origin": "https://insights.netskope.io",
+        "referer": "https://insights.netskope.io/",
+        "x-auth-params": x_auth,
+    }
+
+
+def _api_get(token: str, path: str, dashboard: str = "release", env: str = "prod") -> dict:
+    """GET a releasemgmtserv endpoint, return parsed JSON."""
+    url = f"{BASE_API}/{path}"
+    resp = requests.get(url, headers=_sync_headers(token, dashboard, env), timeout=15)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def fetch_api_metadata(token: str) -> tuple:
+    """Fetch the three reference tables needed for release syncing.
+    Returns (dashboards, days, release_types) dicts keyed by id."""
+    raw_dash = _api_get(token, "dashboards")["dashboards"]
+    raw_days = _api_get(token, "days")["days"]
+    raw_types = _api_get(token, "release_types")["releaseTypes"]
+    dashboards = {d["id"]: d for d in raw_dash}
+    days = {d["id"]: d for d in raw_days}
+    release_types = {t["id"]: t for t in raw_types}
+    return dashboards, days, release_types
+
+
+def _build_day_label(day_name: str, env_name: str) -> str:
+    """Build a human-readable label like 'prod day 2' or 'staging'.
+
+    day_name comes from the /days API (e.g. 'Day 1', 'Day 4', 'Staging').
+    env_name comes from the /release_types API (e.g. 'prod', 'preprod').
+    """
+    lower = day_name.strip().lower()
+    if lower == "staging":
+        return "staging"
+    # Extract the number from "Day 3" → "3"
+    m = re.match(r"day\s+(\d+)", lower)
+    if m:
+        return f"{env_name} day {m.group(1)}"
+    # Fallback: just combine env + day_name
+    return f"{env_name} {lower}"
+
+
+def _dashboard_name_for_entry(dashboard_id: int, env_name: str,
+                              dashboards: dict) -> str:
+    """Return the 'dashboard' value used in releases.json entries."""
+    dash_obj = dashboards.get(dashboard_id, {})
+    name = dash_obj.get("name", "release")
+    # For staging-release dashboard, use 'staging-release'
+    if name == "staging-release":
+        return "staging-release"
+    return "release"
+
+
+def sync_releases(token: str, version_filter: str = None) -> dict:
+    """Call the release-management API to discover all release versions
+    and their days, then return a dict matching the releases.json schema.
+
+    Only includes releases on dashboard IDs listed in SYNC_DASHBOARD_IDS.
+    If *version_filter* is given (e.g. '135.0'), only that version is synced.
+    """
+    print("[sync] Fetching metadata (dashboards, days, release_types) ...")
+    dashboards, days_map, type_map = fetch_api_metadata(token)
+
+    # Fetch the full releases list
+    print("[sync] Fetching releases list ...")
+    all_releases = _api_get(token, "releases?type=prod")["releases"]
+
+    # Filter to dashboards we care about
+    target_releases = [
+        r for r in all_releases
+        if r["dashboardId"] in SYNC_DASHBOARD_IDS and r.get("enabled", True)
+    ]
+    if version_filter:
+        target_releases = [r for r in target_releases if r["name"] == version_filter]
+
+    if not target_releases:
+        print("[sync] No matching releases found.")
+        return {}
+
+    # Group releases by version name — a version can have entries on
+    # both dashboard 1 (release) and dashboard 16 (staging-release)
+    from collections import defaultdict
+    by_version = defaultdict(list)
+    for r in target_releases:
+        by_version[r["name"]].append(r)
+
+    result = {}
+    for ver_name, release_objs in sorted(by_version.items()):
+        print(f"[sync] Processing {ver_name} ({len(release_objs)} dashboard(s)) ...")
+        day_entries = []
+        for rel in release_objs:
+            rid = rel["id"]
+            did = rel["dashboardId"]
+            try:
+                rd_list = _api_get(token, f"release_days?releaseId={rid}")["releaseDays"]
+            except Exception as e:
+                print(f"  [warn] Failed to fetch release_days for releaseId={rid}: {e}")
+                continue
+
+            for rd in rd_list:
+                if not rd.get("enabled", True):
+                    continue
+                day_obj = days_map.get(rd["dayId"], {})
+                type_obj = type_map.get(rd["typeId"], {})
+                day_name = day_obj.get("name", f"dayId={rd['dayId']}")
+                env_name = type_obj.get("name", "unknown")
+                label = _build_day_label(day_name, env_name)
+                dashboard_str = _dashboard_name_for_entry(did, env_name, dashboards)
+                # Map env_name to the env field used in releases.json
+                if env_name == "prod":
+                    env_field = "prod"
+                else:
+                    env_field = "preprod"
+                day_entries.append({
+                    "label": label,
+                    "release_day_id": rd["id"],
+                    "env": env_field,
+                    "dashboard": dashboard_str,
+                })
+
+        # Sort: staging first, then preprod days, then prod days
+        def sort_key(d):
+            lab = d["label"].lower()
+            if lab == "staging":
+                return (0, 0)
+            if lab.startswith("preprod"):
+                # extract day number for ordering
+                m = re.search(r"(\d+)$", lab)
+                return (1, int(m.group(1)) if m else 0)
+            if lab.startswith("prod"):
+                m = re.search(r"(\d+)$", lab)
+                return (2, int(m.group(1)) if m else 0)
+            return (3, 0)
+
+        day_entries.sort(key=sort_key)
+        if day_entries:
+            result[ver_name] = {"days": day_entries}
+
+    return result
+
+
+def do_sync_releases(token: str, version_filter: str = None):
+    """Sync releases from API and merge into releases.json."""
+    new_data = sync_releases(token, version_filter)
+    if not new_data:
+        print("[sync] Nothing to sync.")
+        return
+
+    # Load existing
+    existing = {}
+    if os.path.isfile(RELEASES_FILE):
+        with open(RELEASES_FILE, "r", encoding="utf-8") as f:
+            existing = json.load(f)
+
+    # Merge: new data replaces existing entries per version
+    for ver, data in new_data.items():
+        existing[ver] = data
+
+    # Write back
+    with open(RELEASES_FILE, "w", encoding="utf-8") as f:
+        json.dump(existing, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    versions_str = ", ".join(sorted(new_data.keys()))
+    print(f"[sync] Updated {RELEASES_FILE}")
+    print(f"[sync] Synced versions: {versions_str}")
+    # Print summary
+    for ver in sorted(new_data.keys()):
+        days = new_data[ver]["days"]
+        labels = ", ".join(d["label"] for d in days)
+        print(f"  {ver}: {labels}")
 
 
 # ── Token management ──────────────────────────────────────────────────────────
@@ -656,9 +847,19 @@ def main():
     parser.add_argument("env", nargs="?", help="Environment (prod, preprod, staging, all)")
     parser.add_argument("day", nargs="?", help="Day number (e.g. 1, 2, 3, 4)")
     parser.add_argument("--show-all-comp", dest="show_all_comp", action="store_true", default=False, help="Show all components (default: only client/nsclient)")
+    parser.add_argument("--sync-releases", dest="sync_releases", action="store_true", default=False,
+                        help="Sync releases.json from the API, then exit. "
+                             "Optionally pass a version to sync only that version.")
     args = parser.parse_args()
 
     ensure_data_dir()
+
+    # Handle --sync-releases before loading releases.json
+    if args.sync_releases:
+        token = load_token()
+        do_sync_releases(token, version_filter=args.version)
+        return
+
     releases = load_releases()
 
     # Use CLI args if provided, else fallback to interactive
