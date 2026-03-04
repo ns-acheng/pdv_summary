@@ -541,15 +541,16 @@ def _build_dc_rows(datacenters: dict, dc_names: dict):
         dep = dc_info.get("deployment", {})
         pdv_status = _colorize_status(pdv.get("status", ""))
         dep_status = _colorize_status(dep.get("status", "") or "(none)")
+        pdv_notes = (pdv.get("notes", "") or "").rstrip("\r\n") or "(none)"
         type_val = get_type(type_hint)
         if has_names:
             rows.append([
                 type_val,
-                dc_names.get(dc_id, "(unknown)"),
+                _colorize_datacenter(dc_names.get(dc_id, "(unknown)")),
                 dc_id[:12] + "...",
                 str(dc_info.get("enabled", "")),
                 pdv_status,
-                pdv.get("notes", "") or "(none)",
+                pdv_notes,
                 pdv.get("reason", "") or "(none)",
                 dep_status,
                 dep.get("version", "") or "(none)",
@@ -557,10 +558,10 @@ def _build_dc_rows(datacenters: dict, dc_names: dict):
         else:
             rows.append([
                 type_val,
-                dc_id,
+                _colorize_datacenter(dc_id),
                 str(dc_info.get("enabled", "")),
                 pdv_status,
-                pdv.get("notes", "") or "(none)",
+                pdv_notes,
                 pdv.get("reason", "") or "(none)",
                 dep_status,
                 dep.get("version", "") or "(none)",
@@ -574,7 +575,8 @@ MAX_COL_WIDTH = 50   # hard cap on any single column width
 _RED = "\033[91m"
 _GREEN = "\033[92m"
 _YELLOW = "\033[93m"
-_BLUE = "\033[96m"  # Light blue (cyan)
+_BLUE = "\033[96m"
+_LIGHT_BROWN = "\033[38;5;180m"
 _RESET = "\033[0m"
 _ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
@@ -596,6 +598,13 @@ def _colorize_status(text: str) -> str:
     if up == "TODO":
         return f"{_BLUE}{text}{_RESET}"
     return text
+
+
+def _colorize_datacenter(text: str) -> str:
+    """Render datacenter values in light-brown colour."""
+    if not text:
+        return text
+    return f"{_LIGHT_BROWN}{text}{_RESET}"
 
 
 def _wrap_text(text: str, width: int) -> list:
@@ -846,7 +855,7 @@ def main():
     parser.add_argument("version", nargs="?", help="Release version (e.g. 135.0)")
     parser.add_argument("env", nargs="?", help="Environment (prod, preprod, staging, all)")
     parser.add_argument("day", nargs="?", help="Day number (e.g. 1, 2, 3, 4)")
-    parser.add_argument("--show-all-comp", dest="show_all_comp", action="store_true", default=False, help="Show all components (default: only client/nsclient)")
+    parser.add_argument("--show-all-comp", dest="show_all_comp", action="store_true", default=True, help="Show all components (default: True)")
     parser.add_argument("--sync-releases", dest="sync_releases", action="store_true", default=False,
                         help="Sync releases.json from the API, then exit. "
                              "Optionally pass a version to sync only that version.")

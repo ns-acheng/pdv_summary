@@ -29,10 +29,9 @@ def extract_guids_by_notes(json_path, notes_value):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 2:
-        print("Usage: python extract_guid_by_notes.py <notes_value>")
-        sys.exit(1)
-
-    notes_value = sys.argv[1]
+        notes_value = ""
+    else:
+        notes_value = sys.argv[1]
     guids = extract_guids_by_notes('cache/temp.json', notes_value)
     for guid in guids:
         print(guid)
