@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from util_token import get_token_from_browser
 from util_output import print_all_components
-from util_xpas import fetch_and_analyze
+from util_xpas import fetch_and_analyze, parse_job_build
 
 if sys.platform == "win32":
     os.system("")
@@ -394,6 +394,74 @@ def job_url_to_console_full(job_url: str) -> str:
     return base + "/consoleFull"
 
 
+def _safe_name_part(value: str, default: str = "unknown") -> str:
+    """Normalize a string for safe filename usage."""
+    text = (value or "").strip()
+    if not text:
+        return default
+    text = re.sub(r"\s+", "_", text)
+    text = re.sub(r"[^A-Za-z0-9._-]", "", text)
+    return text or default
+
+
+def _short_app_name(value: str) -> str:
+    """Build a compact app token for filenames.
+    Example: "MP Compliance" -> "MPComp"
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return "APP"
+
+    tokens = [t for t in re.split(r"[^A-Za-z0-9]+", raw) if t]
+    if not tokens:
+        return "APP"
+
+    first = tokens[0]
+    parts = [first]
+    for token in tokens[1:]:
+        low = token.lower()
+        if low == "compliance":
+            parts.append("Comp")
+        else:
+            parts.append(token)
+
+    return _safe_name_part("".join(parts), "APP")
+
+
+def _build_log_filename(console_url: str, label: str, profile: dict) -> str:
+    """Build contextual log filename:
+    <JOB>_<BUILD>_<APP>_<VERSION>_<ENV>_day<N>_<DC>.txt
+    Example: DPAS_20615_MP_133.0_prod_day1_RUH1.txt
+    """
+    job_name, build_number = parse_job_build(console_url)
+
+    app_name = "APP"
+    dc_name = "DC"
+    if " / " in label:
+        left, right = label.split(" / ", 1)
+        app_name = _short_app_name(left)
+        dc_name = _safe_name_part(right, "DC")
+    else:
+        app_name = _short_app_name(label)
+
+    version = _safe_name_part(profile.get("releaseVersion", "unknown"), "unknown")
+    env = _safe_name_part(profile.get("releaseType", "prod"), "prod").lower()
+    release_day = str(profile.get("releaseDay", "")).strip().lower()
+
+    m = re.search(r"day\s*(\d+)", release_day, re.IGNORECASE)
+    if m:
+        env_day = f"{env}_day{m.group(1)}"
+    elif release_day == "staging":
+        env_day = "staging"
+    else:
+        env_day = _safe_name_part(f"{env}_{release_day}" if release_day else env, env)
+
+    return (
+        f"{_safe_name_part(job_name)}_{_safe_name_part(build_number)}_"
+        f"{app_name}_{version}_{env_day}_{dc_name}.txt"
+    )
+
+
 # Statuses that warrant Jenkins log analysis
 _AUTO_ANALYZE_STATUSES = {"FAILURE"}             # fetch logs automatically
 _PROMPT_ANALYZE_STATUSES = {"APPROVED"}          # ask user first
@@ -467,11 +535,14 @@ def _analyze_component(token: str, rcid: int, label: str, profile: dict,
     print(f"[pdv]   Latest FAILURE run: createdAt={created_at}")
     print(f"[pdv]   Jenkins URL: {console_url}")
 
+    log_filename = _build_log_filename(console_url, label, profile)
+
     fetch_and_analyze(
         console_url,
         cookie=cookie,
         prefix="[pdv]",
         concise_output=True,
+        output_text_filename=log_filename,
     )
 
 

@@ -204,6 +204,7 @@ def fetch_and_analyze(
     verify_ssl: bool = True,
     prefix: str = "[util_xpas]",
     concise_output: bool = False,
+    output_text_filename: str | None = None,
 ) -> str | None:
     """Download a Jenkins consoleFull page, save the plain-text log, and print
     a failed-case summary.  Returns the saved .txt path, or None on error.
@@ -261,21 +262,34 @@ def fetch_and_analyze(
                 timeout=timeout,
                 verify_ssl=verify_ssl,
             )
+            txt_output_path = None
+            if output_text_filename:
+                name = output_text_filename.strip()
+                if not name.lower().endswith(".txt"):
+                    name += ".txt"
+                txt_output_path = os.path.join(CACHE_DIR, name)
+
             saved_text = save_output(
-                plain_url, plain_text, None, prefix="xpas_console", extension="txt"
+                plain_url,
+                plain_text,
+                txt_output_path,
+                prefix="xpas_console",
+                extension="txt",
             )
             if concise_output:
                 with contextlib.redirect_stdout(io.StringIO()):
                     remove_html_if_needed(html_source, False)
             else:
                 remove_html_if_needed(html_source, False)
-            print(f"{prefix} Saved plain-text log to: {saved_text}")
+            _LIGHT_BROWN = "\033[38;5;180m"
+            _RESET = "\033[0m"
+            print(
+                f"{prefix} Saved plain-text log to: "
+                f"{_LIGHT_BROWN}{saved_text}{_RESET}"
+            )
             if not concise_output:
                 print(f"{prefix} Retrieved {len(plain_text)} characters of plain text.")
                 print_xpas_failed_cases(saved_text, prefix=prefix)
-            _YELLOW = "\033[93m"
-            _RESET = "\033[0m"
-            print(f"{prefix} Open the raw log for full details: {_YELLOW}{saved_text}{_RESET}")
             return saved_text
 
         except requests.exceptions.HTTPError as exc:
