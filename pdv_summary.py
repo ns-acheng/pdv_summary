@@ -7,6 +7,7 @@ import sys
 from datetime import datetime
 from util_token import get_token_from_browser
 from util_output import print_all_components
+from util_xpas import fetch_and_analyze
 
 if sys.platform == "win32":
     os.system("")
@@ -58,12 +59,22 @@ def day_to_profile(version: str, day: dict) -> dict:
     """Convert a day entry from releases.json into a profile dict
     that the rest of the code can consume."""
     env = day["env"]
+    label = day.get("label", "")  # e.g. "prod day 2" or "staging"
+    # Derive a human-readable "Day N" string for the releaseday x-auth-params field
+    m = re.search(r"day\s+(\d+)", label, re.IGNORECASE)
+    if m:
+        release_day_label = f"Day {m.group(1)}"
+    elif label.lower() == "staging":
+        release_day_label = "Staging"
+    else:
+        release_day_label = label.title()
     return {
         "release_day_id": day["release_day_id"],
         "x_auth_params":  _AUTH_PARAMS[env],
         "dashboard":      day["dashboard"],
         "releaseType":    env,
         "releaseVersion": version,
+        "releaseDay":     release_day_label,
     }
 
 
@@ -327,6 +338,147 @@ def fetch_events(token: str, profile: dict) -> dict:
     resp = requests.get(url, headers=_headers(token, profile["x_auth_params"]), timeout=30)
     resp.raise_for_status()
     return resp.json()
+
+
+def fetch_pdv_runs(token: str, release_component_id: int, profile: dict) -> list[dict]:
+    """Call /pdv_runs?releaseComponentIds=<id> and return the list of run dicts."""
+    # Build x-auth-params that includes releaseday, mirroring the browser request
+    day_label = profile.get("releaseDay", "")  # e.g. "Day 2"
+    env = profile.get("releaseType", "prod")
+    dash = profile.get("dashboard", "release")
+    x_auth = (
+        f"page=/pdv/{dash}/{env}/dashboard; "
+        f"dashboard={dash}; "
+        f"releaseday={day_label}; "
+        f"env={env}"
+    )
+    url = f"{BASE_API}/pdv_runs?releaseComponentIds={release_component_id}"
+    hdrs = _headers(token, x_auth)
+    resp = requests.get(url, headers=hdrs, timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+    # API returns {"pdvRuns": [...]} or a bare list
+    if isinstance(data, dict):
+        return data.get("pdvRuns", [])
+    return data if isinstance(data, list) else []
+
+
+def get_latest_failure_run(pdv_runs: list[dict]) -> dict | None:
+    """Return the run with the latest createdAt among FAILURE runs."""
+    failures = [
+        r for r in pdv_runs
+        if r.get("status", "").upper() == "FAILURE" and r.get("createdBy", "").strip()
+    ]
+    if not failures:
+        return None
+    return max(failures, key=lambda r: r.get("createdAt", ""))
+
+
+def job_url_to_console_full(job_url: str) -> str:
+    """Convert a base Jenkins job URL to its consoleFull URL."""
+    base = job_url.rstrip("/")
+    # Strip any existing console suffix before appending
+    for suffix in ("/consoleFull", "/consoleText", "/console"):
+        if base.endswith(suffix):
+            base = base[: -len(suffix)]
+    return base + "/consoleFull"
+
+
+# Statuses that warrant Jenkins log analysis
+_AUTO_ANALYZE_STATUSES = {"FAILURE"}             # fetch logs automatically
+_PROMPT_ANALYZE_STATUSES = {"APPROVED"}          # ask user first
+_ALL_ANALYZE_STATUSES = _AUTO_ANALYZE_STATUSES | _PROMPT_ANALYZE_STATUSES
+
+
+def collect_analyzable_component_ids(
+    all_apps: dict,
+) -> tuple[dict[int, str], dict[int, str]]:
+    """Walk all_apps and return two dicts {releaseComponentId: label}:
+      - auto_ids  : FAILURE components (analyzed automatically)
+      - prompt_ids: APPROVED components (user is prompted first)
+    Deduplicates by releaseComponentId.
+    """
+    auto_ids: dict[int, str] = {}
+    prompt_ids: dict[int, str] = {}
+    for app_name, components in all_apps.items():
+        for comp_id, comp_data in components.items():
+            for dc_id, dc_info in comp_data.get("datacenters", {}).items():
+                status = dc_info.get("pdvRun", {}).get("status", "").upper()
+                rcid = dc_info.get("releaseComponentId")
+                if not rcid:
+                    continue
+                dc_name = dc_info.get("datacenterName", dc_id[:8])
+                label = f"{app_name} / {dc_name}"
+                if status in _AUTO_ANALYZE_STATUSES and rcid not in auto_ids:
+                    auto_ids[rcid] = label
+                elif status in _PROMPT_ANALYZE_STATUSES and rcid not in prompt_ids:
+                    prompt_ids[rcid] = label
+    return auto_ids, prompt_ids
+
+
+def _analyze_component(token: str, rcid: int, label: str, profile: dict,
+                       cookie: str | None = None) -> None:
+    """Fetch pdv_runs for a single releaseComponentId, find the latest
+    FAILURE run, download its Jenkins log, and print failed cases."""
+    print(f"\n[pdv] ── {label}  (releaseComponentId={rcid}) ──")
+    try:
+        runs = fetch_pdv_runs(token, rcid, profile)
+    except Exception as exc:
+        print(f"[pdv]   Could not fetch pdv_runs: {exc}")
+        return
+
+    if not runs:
+        print("[pdv]   No pdv_runs returned.")
+        return
+
+    latest = get_latest_failure_run(runs)
+    if not latest:
+        print("[pdv]   No FAILURE run with a Jenkins URL found in pdv_runs.")
+        return
+
+    jenkins_job_url = latest["createdBy"].strip()
+    console_url = job_url_to_console_full(jenkins_job_url)
+    created_at = latest.get("createdAt", "unknown")
+    print(f"[pdv]   Latest FAILURE run: createdAt={created_at}")
+    print(f"[pdv]   Jenkins URL: {console_url}")
+
+    fetch_and_analyze(console_url, cookie=cookie, prefix="[pdv]")
+
+
+def analyze_failure_jenkins_logs(
+    token: str,
+    all_apps: dict,
+    profile: dict,
+    cookie: str | None = None,
+) -> None:
+    """For FAILURE components, auto-fetch and analyze Jenkins logs.
+    For APPROVED components, prompt the user first."""
+    auto_ids, prompt_ids = collect_analyzable_component_ids(all_apps)
+
+    # ── Auto-analyze FAILURE components ──────────────────────────────────
+    if auto_ids:
+        print(f"\n[pdv] Found {len(auto_ids)} FAILURE component(s). "
+              "Fetching Jenkins logs...")
+        for rcid, label in auto_ids.items():
+            _analyze_component(token, rcid, label, profile, cookie)
+
+    # ── Prompt for APPROVED components ──────────────────────────────────
+    if prompt_ids:
+        print(f"\n[pdv] Found {len(prompt_ids)} APPROVED component(s) "
+              "(manually approved after failure):")
+        for rcid, label in prompt_ids.items():
+            print(f"  - {label}  (releaseComponentId={rcid})")
+        try:
+            answer = input(
+                "\n[pdv] Collect Jenkins logs for APPROVED components? [y/N] "
+            ).strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            answer = "n"
+        if answer in ("y", "yes"):
+            for rcid, label in prompt_ids.items():
+                _analyze_component(token, rcid, label, profile, cookie)
+        else:
+            print("[pdv] Skipped APPROVED component analysis.")
 
 
 def fetch_with_retry(token: str, profile: dict):
@@ -621,6 +773,9 @@ def process_day(version: str, day: dict, token: str, dc_names: dict, show_all_co
     print(f"{'#'*70}")
     print_all_components(all_apps, dc_names, TARGET_COMPONENTS, show_all_comp=show_all_comp)
 
+    # ── Auto-analyze FAILURE components ──────────────────────────────────────
+    analyze_failure_jenkins_logs(token, all_apps, profile)
+
     # Save cleaned JSON
     cleaned = {}
     for app_name, components in all_apps.items():
@@ -643,7 +798,6 @@ def process_day(version: str, day: dict, token: str, dc_names: dict, show_all_co
     comp_path = os.path.join(CACHE_DIR, f"component_data_{version}_{safe_label}.json")
     with open(comp_path, "w", encoding="utf-8") as f:
         json.dump(cleaned, f, indent=2)
-    print(f"  Saved to {comp_path}")
 
     return new_token
 

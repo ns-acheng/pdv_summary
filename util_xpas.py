@@ -1,12 +1,12 @@
 """
-util_xpas.py - POC helper to fetch Jenkins logs and cache them.
+util_xpas.py - Helper to fetch Jenkins logs and cache them.
 
 Example:
-    python util_xpas.py --cookie "JSESSIONID=...; other=value"
+    python util_xpas.py --url "https://cqejenkins-.../consoleFull"
 
 Notes:
-- This endpoint is usually session-protected; pass a valid browser cookie string.
-- Output is written under cache-xpas/ with auto-generated timestamped filenames.
+- Cookie is auto-extracted from Chrome local-profile debug session.
+- Output is written under cache-xpas/ with auto-generated filenames.
 """
 
 from __future__ import annotations
@@ -16,6 +16,8 @@ import os
 import re
 from datetime import datetime
 from urllib.parse import urljoin
+
+import time
 
 import requests
 from util_browser import DEBUG_URL
@@ -80,7 +82,7 @@ def fetch_console_full(
 ) -> str:
     """Fetch Jenkins consoleFull page text using authenticated browser cookie."""
     if not cookie or not cookie.strip():
-        raise ValueError("Cookie is required. Use --cookie or XPAS_COOKIE env var.")
+        raise ValueError("Cookie is required but was not provided.")
 
     headers = build_headers(url, cookie.strip())
     response = requests.get(url, headers=headers, timeout=timeout, verify=verify_ssl)
@@ -120,8 +122,7 @@ def save_output(
         target = output_path
     else:
         job_name, build_number = parse_job_build(url)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{prefix}_{job_name}_{build_number}_{timestamp}.{extension}"
+        filename = f"{prefix}_{job_name}_{build_number}.{extension}"
         target = os.path.join(CACHE_DIR, filename)
 
     with open(target, "w", encoding="utf-8") as f:
@@ -137,11 +138,6 @@ def parse_args() -> argparse.Namespace:
         )
     )
     parser.add_argument("--url", default=DEFAULT_URL, help="Jenkins consoleFull URL")
-    parser.add_argument(
-        "--cookie",
-        default=os.environ.get("XPAS_COOKIE", ""),
-        help="Raw Cookie header value; defaults to XPAS_COOKIE env var.",
-    )
     parser.add_argument(
         "--timeout",
         type=int,
@@ -200,18 +196,107 @@ def is_chrome_debug_running() -> bool:
         return False
 
 
+def fetch_and_analyze(
+    jenkins_url: str,
+    cookie: str | None = None,
+    timeout: int = 60,
+    verify_ssl: bool = True,
+    prefix: str = "[util_xpas]",
+) -> str | None:
+    """Download a Jenkins consoleFull page, save the plain-text log, and print
+    a failed-case summary.  Returns the saved .txt path, or None on error.
+
+    *jenkins_url* should be the .../consoleFull URL.
+    *cookie* is auto-extracted from the Chrome local-profile session when omitted.
+    """
+    # Ensure URL ends with /consoleFull
+    clean_url = jenkins_url.rstrip("/")
+    if not clean_url.endswith("/consoleFull"):
+        clean_url = clean_url.rstrip("/console").rstrip("/consoleText") + "/consoleFull"
+
+    max_retries = 3
+    retry_delay = 10  # seconds
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            if not cookie:
+                print(f"{prefix} No cookie provided, extracting from Chrome session...")
+                cookie = get_cookie_from_browser(clean_url)
+                if not cookie:
+                    print(f"{prefix} Could not obtain Jenkins cookie from browser.")
+                    return None
+
+            html_text = fetch_console_full(
+                url=clean_url,
+                cookie=cookie,
+                timeout=timeout,
+                verify_ssl=verify_ssl,
+            )
+            html_source = save_output(
+                clean_url, html_text, None, prefix="xpas_console", extension="log"
+            )
+            print(f"{prefix} Saved Jenkins console HTML to: {html_source}")
+
+            plain_url = resolve_console_text_url(clean_url, html_text)
+            if not plain_url:
+                print(f"{prefix} consoleText link not found in HTML.")
+                remove_html_if_needed(html_source, False)
+                return None
+
+            plain_text = fetch_console_full(
+                url=plain_url,
+                cookie=cookie,
+                timeout=timeout,
+                verify_ssl=verify_ssl,
+            )
+            saved_text = save_output(
+                plain_url, plain_text, None, prefix="xpas_console", extension="txt"
+            )
+            remove_html_if_needed(html_source, False)
+            print(f"{prefix} Saved plain-text log to: {saved_text}")
+            print(f"{prefix} Retrieved {len(plain_text)} characters of plain text.")
+            print_xpas_failed_cases(saved_text, prefix=prefix)
+            _YELLOW = "\033[93m"
+            _RESET = "\033[0m"
+            print(f"{prefix} Open the raw log for full details: {_YELLOW}{saved_text}{_RESET}")
+            return saved_text
+
+        except requests.exceptions.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            if status == 403 and attempt < max_retries:
+                print(
+                    f"{prefix} HTTP 403 on attempt {attempt}/{max_retries}. "
+                    f"Re-fetching cookie in {retry_delay}s..."
+                )
+                time.sleep(retry_delay)
+                cookie = None  # force re-extraction on next attempt
+                continue
+            print(f"{prefix} HTTP error ({status}): {exc}")
+            if status == 403 and is_chrome_debug_running():
+                print(
+                    f"{prefix} Chrome debug session is running on port 9222, "
+                    "but request is still 403."
+                )
+                print(
+                    f"{prefix} Please refresh the Jenkins tab in Chrome and "
+                    "run the tool again."
+                )
+            return None
+        except Exception as exc:
+            print(f"{prefix} Failed to fetch/analyze Jenkins log: {exc}")
+            return None
+
+
 def test_main() -> None:
     args = parse_args()
     try:
-        cookie = (args.cookie or "").strip()
+        print("[util_xpas] Extracting cookie from Chrome session...")
+        cookie = get_cookie_from_browser(args.url)
         if not cookie:
-            print("[util_xpas] No --cookie provided, trying browser cookie extraction...")
-            cookie = get_cookie_from_browser(args.url)
-            if not cookie:
-                raise ValueError(
-                    "Cookie is required. Pass --cookie or ensure Chrome debug "
-                    "session has Jenkins cookies."
-                )
+            raise ValueError(
+                "Could not obtain Jenkins cookie. Ensure Chrome is running "
+                "with --remote-debugging-port=9222 and has the Jenkins tab open."
+            )
 
         if args.from_html_file:
             with open(args.from_html_file, "r", encoding="utf-8") as f:
@@ -248,7 +333,7 @@ def test_main() -> None:
             plain_url,
             plain_text,
             args.output_text or None,
-            prefix="xpas_consoleText",
+            prefix="xpas_console",
             extension="txt",
         )
         remove_html_if_needed(html_source, args.keep_html)

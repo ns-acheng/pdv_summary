@@ -208,9 +208,9 @@ def get_token_from_browser(
         )
         return None
 
-    target_tab = find_tab_by_keyword(tabs, "netskope.io")
+    target_tab = find_tab_by_host(tabs, "insights.netskope.io")
     if not target_tab:
-        print(f"{prefix} No netskope.io tab found. Open dashboard and retry.")
+        print(f"{prefix} No insights.netskope.io tab found. Open dashboard and retry.")
         return None
 
     ws_url = target_tab.get("webSocketDebuggerUrl")
