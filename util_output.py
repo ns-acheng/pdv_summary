@@ -1,4 +1,6 @@
 import re
+from util_log import format_failed_cases_for_display
+from util_log import parse_failed_cases_from_file
 
 MAX_COL_WIDTH = 50   # hard cap on any single column width
 
@@ -204,3 +206,16 @@ def print_all_components(all_apps: dict, dc_names: dict, target_components: dict
             friendly = target_components.get(comp_id, f"(unknown: {comp_id})")
             title = f"{friendly} ({comp_id})"
             _print_table(title, headers, rows)
+
+
+def print_xpas_failed_cases(log_path: str, prefix: str = "[util_xpas]") -> None:
+    """Print XPAS failed test cases from short test summary info in blue."""
+    failed_cases = parse_failed_cases_from_file(log_path)
+    if not failed_cases:
+        print(f"{prefix} No FAILED cases found in short test summary info.")
+        return
+
+    lines = format_failed_cases_for_display(failed_cases)
+    print(f"{_BLUE}{prefix} {lines[0]}{_RESET}")
+    for line in lines[1:]:
+        print(f"{_BLUE}{prefix} {line}{_RESET}")
