@@ -45,6 +45,16 @@ _AUTH_PARAMS = {
     "preprod": "page=/pdv/staging-release/staging/dashboard; dashboard=staging-release; env=preprod",
     "prod":    "page=/pdv/release/prod/dashboard; dashboard=release; env=prod",
 }
+_LIGHT_BROWN = "\033[38;5;180m"
+_RESET = "\033[0m"
+
+
+def _colorize_prompt_label(label: str) -> str:
+    """Color only the datacenter part (right side of ' / ') in light brown."""
+    if " / " not in label:
+        return label
+    left, right = label.rsplit(" / ", 1)
+    return f"{left} / {_LIGHT_BROWN}{right}{_RESET}"
 
 
 def load_releases() -> dict:
@@ -392,22 +402,36 @@ _ALL_ANALYZE_STATUSES = _AUTO_ANALYZE_STATUSES | _PROMPT_ANALYZE_STATUSES
 
 def collect_analyzable_component_ids(
     all_apps: dict,
+    dc_names: dict | None = None,
+    target_components: dict | None = None,
 ) -> tuple[dict[int, str], dict[int, str]]:
     """Walk all_apps and return two dicts {releaseComponentId: label}:
       - auto_ids  : FAILURE components (analyzed automatically)
       - prompt_ids: APPROVED components (user is prompted first)
+    Only considers Client/NSClient components when target_components is given.
     Deduplicates by releaseComponentId.
     """
+    if dc_names is None:
+        dc_names = {}
     auto_ids: dict[int, str] = {}
     prompt_ids: dict[int, str] = {}
     for app_name, components in all_apps.items():
         for comp_id, comp_data in components.items():
+            # Only consider Client / NSClient components
+            if target_components:
+                friendly = target_components.get(comp_id, "").lower()
+                if "client" not in friendly and "nsclient" not in friendly:
+                    continue
             for dc_id, dc_info in comp_data.get("datacenters", {}).items():
                 status = dc_info.get("pdvRun", {}).get("status", "").upper()
                 rcid = dc_info.get("releaseComponentId")
                 if not rcid:
                     continue
-                dc_name = dc_info.get("datacenterName", dc_id[:8])
+                dc_name = (
+                    dc_info.get("datacenterName")
+                    or dc_names.get(dc_id)
+                    or dc_id[:8]
+                )
                 label = f"{app_name} / {dc_name}"
                 if status in _AUTO_ANALYZE_STATUSES and rcid not in auto_ids:
                     auto_ids[rcid] = label
@@ -420,7 +444,8 @@ def _analyze_component(token: str, rcid: int, label: str, profile: dict,
                        cookie: str | None = None) -> None:
     """Fetch pdv_runs for a single releaseComponentId, find the latest
     FAILURE run, download its Jenkins log, and print failed cases."""
-    print(f"\n[pdv] ── {label}  (releaseComponentId={rcid}) ──")
+    pretty_label = _colorize_prompt_label(label)
+    print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
     try:
         runs = fetch_pdv_runs(token, rcid, profile)
     except Exception as exc:
@@ -442,7 +467,12 @@ def _analyze_component(token: str, rcid: int, label: str, profile: dict,
     print(f"[pdv]   Latest FAILURE run: createdAt={created_at}")
     print(f"[pdv]   Jenkins URL: {console_url}")
 
-    fetch_and_analyze(console_url, cookie=cookie, prefix="[pdv]")
+    fetch_and_analyze(
+        console_url,
+        cookie=cookie,
+        prefix="[pdv]",
+        concise_output=True,
+    )
 
 
 def analyze_failure_jenkins_logs(
@@ -450,10 +480,14 @@ def analyze_failure_jenkins_logs(
     all_apps: dict,
     profile: dict,
     cookie: str | None = None,
+    dc_names: dict | None = None,
+    target_components: dict | None = None,
 ) -> None:
     """For FAILURE components, auto-fetch and analyze Jenkins logs.
     For APPROVED components, prompt the user first."""
-    auto_ids, prompt_ids = collect_analyzable_component_ids(all_apps)
+    auto_ids, prompt_ids = collect_analyzable_component_ids(
+        all_apps, dc_names, target_components
+    )
 
     # ── Auto-analyze FAILURE components ──────────────────────────────────
     if auto_ids:
@@ -467,7 +501,8 @@ def analyze_failure_jenkins_logs(
         print(f"\n[pdv] Found {len(prompt_ids)} APPROVED component(s) "
               "(manually approved after failure):")
         for rcid, label in prompt_ids.items():
-            print(f"  - {label}  (releaseComponentId={rcid})")
+            pretty_label = _colorize_prompt_label(label)
+            print(f"  - {pretty_label}  (releaseComponentId={rcid})")
         try:
             answer = input(
                 "\n[pdv] Collect Jenkins logs for APPROVED components? [y/N] "
@@ -774,7 +809,10 @@ def process_day(version: str, day: dict, token: str, dc_names: dict, show_all_co
     print_all_components(all_apps, dc_names, TARGET_COMPONENTS, show_all_comp=show_all_comp)
 
     # ── Auto-analyze FAILURE components ──────────────────────────────────────
-    analyze_failure_jenkins_logs(token, all_apps, profile)
+    analyze_failure_jenkins_logs(
+        token, all_apps, profile,
+        dc_names=dc_names, target_components=TARGET_COMPONENTS,
+    )
 
     # Save cleaned JSON
     cleaned = {}
@@ -808,20 +846,26 @@ def main():
     parser.add_argument("env", nargs="?", help="Environment (prod, preprod, staging, all)")
     parser.add_argument("day", nargs="?", help="Day number (e.g. 1, 2, 3, 4)")
     parser.add_argument("--show-all-comp", dest="show_all_comp", action="store_true", default=True, help="Show all components (default: True)")
-    parser.add_argument("--sync-releases", dest="sync_releases", action="store_true", default=False,
-                        help="Sync releases.json from the API, then exit. "
-                             "Optionally pass a version to sync only that version.")
     args = parser.parse_args()
 
     ensure_data_dir()
 
-    # Handle --sync-releases before loading releases.json
-    if args.sync_releases:
+    releases = load_releases()
+
+    # Auto-sync when user requests a version not present in releases.json
+    if args.version and args.version not in releases:
+        print(
+            f"[sync] Version {args.version} not found in {RELEASES_FILE}. "
+            "Trying to sync from API ..."
+        )
         token = load_token()
         do_sync_releases(token, version_filter=args.version)
-        return
-
-    releases = load_releases()
+        releases = load_releases()
+        if args.version not in releases:
+            raise SystemExit(
+                f"Version {args.version} still not found after sync. "
+                "Please verify the version/env in Insights."
+            )
 
     # Use CLI args if provided, else fallback to interactive
     if args.version and args.version in releases:

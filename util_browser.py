@@ -218,35 +218,53 @@ def get_token_from_browser(
         print(f"{prefix} Tab has no WebSocket debugger URL (try refresh).")
         return None
 
-    try:
-        ws = websocket.create_connection(ws_url, timeout=5)
-        flat_keys_js = " || ".join(f"localStorage.getItem('{k}')" for k in TOKEN_KEYS)
-        okta_js = (
-            "(function(){"
-            f"var raw=localStorage.getItem('{OKTA_TOKEN_KEY}');"
-            "if(!raw)return null;"
-            "try{var o=JSON.parse(raw);"
-            "return (o.accessToken&&o.accessToken.accessToken)||null;}"
-            "catch(e){return null;}"
-            "})()"
-        )
-        js = f"{flat_keys_js} || {okta_js}"
-        ws.send(
-            json.dumps(
-                {
-                    "id": 1,
-                    "method": "Runtime.evaluate",
-                    "params": {"expression": js},
-                }
-            )
-        )
-        result = json.loads(ws.recv())
-        ws.close()
-    except Exception as exc:
-        print(f"{prefix} WebSocket error: {exc}")
-        return None
+    # Build the JS expression once
+    flat_keys_js = " || ".join(f"localStorage.getItem('{k}')" for k in TOKEN_KEYS)
+    okta_js = (
+        "(function(){"
+        f"var raw=localStorage.getItem('{OKTA_TOKEN_KEY}');"
+        "if(!raw)return null;"
+        "try{var o=JSON.parse(raw);"
+        "return (o.accessToken&&o.accessToken.accessToken)||null;}"
+        "catch(e){return null;}"
+        "})()"
+    )
+    js = f"{flat_keys_js} || {okta_js}"
 
-    token = result.get("result", {}).get("result", {}).get("value")
+    # Poll until the token appears (page may still be loading / auth redirecting)
+    max_token_wait = 30  # seconds
+    poll_interval = 3
+    token = None
+    for elapsed in range(0, max_token_wait, poll_interval):
+        try:
+            ws = websocket.create_connection(ws_url, timeout=5)
+            ws.send(
+                json.dumps(
+                    {
+                        "id": 1,
+                        "method": "Runtime.evaluate",
+                        "params": {"expression": js},
+                    }
+                )
+            )
+            result = json.loads(ws.recv())
+            ws.close()
+            token = result.get("result", {}).get("result", {}).get("value")
+            if token and token.startswith("eyJ"):
+                break
+            token = None
+        except Exception:
+            pass
+        print(
+            f"{prefix} Waiting for token (page loading) ... "
+            f"({elapsed + poll_interval}/{max_token_wait}s)",
+            end="\r",
+        )
+        time.sleep(poll_interval)
+    # Clear the progress line
+    if not token:
+        print()
+
     if not token:
         try:
             ws2 = websocket.create_connection(ws_url, timeout=5)

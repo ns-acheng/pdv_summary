@@ -12,9 +12,10 @@ Notes:
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import os
 import re
-from datetime import datetime
 from urllib.parse import urljoin
 
 import time
@@ -202,6 +203,7 @@ def fetch_and_analyze(
     timeout: int = 60,
     verify_ssl: bool = True,
     prefix: str = "[util_xpas]",
+    concise_output: bool = False,
 ) -> str | None:
     """Download a Jenkins consoleFull page, save the plain-text log, and print
     a failed-case summary.  Returns the saved .txt path, or None on error.
@@ -220,8 +222,13 @@ def fetch_and_analyze(
     for attempt in range(1, max_retries + 1):
         try:
             if not cookie:
-                print(f"{prefix} No cookie provided, extracting from Chrome session...")
-                cookie = get_cookie_from_browser(clean_url)
+                if not concise_output:
+                    print(f"{prefix} No cookie provided, extracting from Chrome session...")
+                    cookie = get_cookie_from_browser(clean_url)
+                else:
+                    # Hide noisy browser-helper logs in concise mode.
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        cookie = get_cookie_from_browser(clean_url, prefix=prefix)
                 if not cookie:
                     print(f"{prefix} Could not obtain Jenkins cookie from browser.")
                     return None
@@ -235,12 +242,17 @@ def fetch_and_analyze(
             html_source = save_output(
                 clean_url, html_text, None, prefix="xpas_console", extension="log"
             )
-            print(f"{prefix} Saved Jenkins console HTML to: {html_source}")
+            if not concise_output:
+                print(f"{prefix} Saved Jenkins console HTML to: {html_source}")
 
             plain_url = resolve_console_text_url(clean_url, html_text)
             if not plain_url:
                 print(f"{prefix} consoleText link not found in HTML.")
-                remove_html_if_needed(html_source, False)
+                if concise_output:
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        remove_html_if_needed(html_source, False)
+                else:
+                    remove_html_if_needed(html_source, False)
                 return None
 
             plain_text = fetch_console_full(
@@ -252,10 +264,15 @@ def fetch_and_analyze(
             saved_text = save_output(
                 plain_url, plain_text, None, prefix="xpas_console", extension="txt"
             )
-            remove_html_if_needed(html_source, False)
+            if concise_output:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    remove_html_if_needed(html_source, False)
+            else:
+                remove_html_if_needed(html_source, False)
             print(f"{prefix} Saved plain-text log to: {saved_text}")
-            print(f"{prefix} Retrieved {len(plain_text)} characters of plain text.")
-            print_xpas_failed_cases(saved_text, prefix=prefix)
+            if not concise_output:
+                print(f"{prefix} Retrieved {len(plain_text)} characters of plain text.")
+                print_xpas_failed_cases(saved_text, prefix=prefix)
             _YELLOW = "\033[93m"
             _RESET = "\033[0m"
             print(f"{prefix} Open the raw log for full details: {_YELLOW}{saved_text}{_RESET}")
@@ -264,10 +281,11 @@ def fetch_and_analyze(
         except requests.exceptions.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else "unknown"
             if status == 403 and attempt < max_retries:
-                print(
-                    f"{prefix} HTTP 403 on attempt {attempt}/{max_retries}. "
-                    f"Re-fetching cookie in {retry_delay}s..."
-                )
+                if not concise_output:
+                    print(
+                        f"{prefix} HTTP 403 on attempt {attempt}/{max_retries}. "
+                        f"Re-fetching cookie in {retry_delay}s..."
+                    )
                 time.sleep(retry_delay)
                 cookie = None  # force re-extraction on next attempt
                 continue
