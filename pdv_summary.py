@@ -6,7 +6,7 @@ import os
 import sys
 from datetime import datetime
 from util_token import get_token_from_browser
-from util_output import print_all_components
+from util_output import print_all_components, print_xpas_failed_cases
 from util_xpas import fetch_and_analyze, parse_job_build
 
 if sys.platform == "win32":
@@ -509,35 +509,48 @@ def collect_analyzable_component_ids(
 
 
 def _analyze_component(token: str, rcid: int, label: str, profile: dict,
-                       cookie: str | None = None) -> None:
+                       cookie: str | None = None) -> str | None:
     """Fetch pdv_runs for a single releaseComponentId, find the latest
-    FAILURE run, download its Jenkins log, and print failed cases."""
-    pretty_label = _colorize_prompt_label(label)
-    print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
+    FAILURE run, and download its Jenkins log.
+
+    Returns saved plain-text log path, or None when unavailable.
+    """
     try:
         runs = fetch_pdv_runs(token, rcid, profile)
     except Exception as exc:
+        pretty_label = _colorize_prompt_label(label)
+        print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
         print(f"[pdv]   Could not fetch pdv_runs: {exc}")
-        return
+        return None
 
     if not runs:
+        pretty_label = _colorize_prompt_label(label)
+        print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
         print("[pdv]   No pdv_runs returned.")
-        return
+        return None
 
     latest = get_latest_failure_run(runs)
     if not latest:
+        pretty_label = _colorize_prompt_label(label)
+        print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
         print("[pdv]   No FAILURE run with a Jenkins URL found in pdv_runs.")
-        return
+        return None
 
     jenkins_job_url = latest["createdBy"].strip()
     console_url = job_url_to_console_full(jenkins_job_url)
+    log_filename = _build_log_filename(console_url, label, profile)
+    display_rel_path = os.path.join("cache-xpas", log_filename)
+    pretty_label = _colorize_prompt_label(label)
+    print(
+        f"\n[pdv] ── {pretty_label}  "
+        f"({_LIGHT_BROWN}{display_rel_path}{_RESET}) ──"
+    )
+
     created_at = latest.get("createdAt", "unknown")
     print(f"[pdv]   Latest FAILURE run: createdAt={created_at}")
     print(f"[pdv]   Jenkins URL: {console_url}")
 
-    log_filename = _build_log_filename(console_url, label, profile)
-
-    fetch_and_analyze(
+    return fetch_and_analyze(
         console_url,
         cookie=cookie,
         prefix="[pdv]",
@@ -553,19 +566,26 @@ def analyze_failure_jenkins_logs(
     cookie: str | None = None,
     dc_names: dict | None = None,
     target_components: dict | None = None,
-) -> None:
+    approved_choice: bool | None = None,
+) -> tuple[list[tuple[int, str, str]], bool | None]:
     """For FAILURE components, auto-fetch and analyze Jenkins logs.
-    For APPROVED components, prompt the user first."""
+    For APPROVED components, prompt once unless *approved_choice* is already set.
+
+    Returns downloaded plain-text log paths for later parsing.
+    """
     auto_ids, prompt_ids = collect_analyzable_component_ids(
         all_apps, dc_names, target_components
     )
+    downloaded_logs: list[tuple[int, str, str]] = []
 
     # ── Auto-analyze FAILURE components ──────────────────────────────────
     if auto_ids:
         print(f"\n[pdv] Found {len(auto_ids)} FAILURE component(s). "
               "Fetching Jenkins logs...")
         for rcid, label in auto_ids.items():
-            _analyze_component(token, rcid, label, profile, cookie)
+            saved_log = _analyze_component(token, rcid, label, profile, cookie)
+            if saved_log:
+                downloaded_logs.append((rcid, label, saved_log))
 
     # ── Prompt for APPROVED components ──────────────────────────────────
     if prompt_ids:
@@ -574,17 +594,25 @@ def analyze_failure_jenkins_logs(
         for rcid, label in prompt_ids.items():
             pretty_label = _colorize_prompt_label(label)
             print(f"  - {pretty_label}  (releaseComponentId={rcid})")
-        try:
-            answer = input(
-                "\n[pdv] Collect Jenkins logs for APPROVED components? [y/N] "
-            ).strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            answer = "n"
-        if answer in ("y", "yes"):
+
+        if approved_choice is None:
+            try:
+                answer = input(
+                    f"\n\033[93m[pdv] Collect Jenkins logs for APPROVED components? [y/N]\033[0m "
+                ).strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                answer = "n"
+            approved_choice = answer in ("y", "yes")
+
+        if approved_choice:
             for rcid, label in prompt_ids.items():
-                _analyze_component(token, rcid, label, profile, cookie)
+                saved_log = _analyze_component(token, rcid, label, profile, cookie)
+                if saved_log:
+                    downloaded_logs.append((rcid, label, saved_log))
         else:
             print("[pdv] Skipped APPROVED component analysis.")
+
+    return downloaded_logs, approved_choice
 
 
 def fetch_with_retry(token: str, profile: dict):
@@ -846,7 +874,14 @@ def choose_days(days: list) -> list:
         print("Invalid choice, try again.")
 
 
-def process_day(version: str, day: dict, token: str, dc_names: dict, show_all_comp: bool = False):
+def process_day(
+    version: str,
+    day: dict,
+    token: str,
+    dc_names: dict,
+    show_all_comp: bool = False,
+    approved_choice: bool | None = None,
+):
     """Fetch, display, and save data for one release day."""
     import inspect
     frame = inspect.currentframe().f_back
@@ -861,10 +896,10 @@ def process_day(version: str, day: dict, token: str, dc_names: dict, show_all_co
         data, new_token = fetch_with_retry(token, profile)
     except requests.exceptions.HTTPError as exc:
         print(f"  HTTP error: {exc}")
-        return token
+        return token, approved_choice, []
     except requests.exceptions.RequestException as exc:
         print(f"  Request failed: {exc}")
-        return token
+        return token, approved_choice, []
 
     # Save full response
     full_path = os.path.join(CACHE_DIR, f"full_response_{version}_{safe_label}.json")
@@ -880,9 +915,10 @@ def process_day(version: str, day: dict, token: str, dc_names: dict, show_all_co
     print_all_components(all_apps, dc_names, TARGET_COMPONENTS, show_all_comp=show_all_comp)
 
     # ── Auto-analyze FAILURE components ──────────────────────────────────────
-    analyze_failure_jenkins_logs(
+    downloaded_logs, approved_choice = analyze_failure_jenkins_logs(
         token, all_apps, profile,
         dc_names=dc_names, target_components=TARGET_COMPONENTS,
+        approved_choice=approved_choice,
     )
 
     # Save cleaned JSON
@@ -908,7 +944,25 @@ def process_day(version: str, day: dict, token: str, dc_names: dict, show_all_co
     with open(comp_path, "w", encoding="utf-8") as f:
         json.dump(cleaned, f, indent=2)
 
-    return new_token
+    return new_token, approved_choice, downloaded_logs
+
+
+def parse_downloaded_logs(downloaded_logs: list[tuple[int, str, str]]) -> None:
+    """Parse and print FAILED cases from downloaded Jenkins plain-text logs."""
+    if not downloaded_logs:
+        print("\n[pdv] No Jenkins logs downloaded; skipped FAILED-case parsing.")
+        return
+
+    print("\n[pdv] ── Parsing FAILED cases from downloaded logs ──")
+    for _rcid, label, log_path in downloaded_logs:
+        pretty_label = _colorize_prompt_label(label)
+        log_name = os.path.basename(log_path)
+        display_rel_path = os.path.join("cache-xpas", log_name)
+        print(
+            f"\n[pdv] {pretty_label}  "
+            f"({_LIGHT_BROWN}{display_rel_path}{_RESET})"
+        )
+        print_xpas_failed_cases(log_path, prefix="[pdv]")
 
 
 def main():
@@ -963,8 +1017,21 @@ def main():
     token = load_token()
     dc_names = load_dc_cache()
 
+    approved_choice: bool | None = None
+    all_downloaded_logs: list[tuple[int, str, str]] = []
     for day in selected_days:
-        token = process_day(version, day, token, dc_names, show_all_comp=args.show_all_comp)
+        token, approved_choice, day_logs = process_day(
+            version,
+            day,
+            token,
+            dc_names,
+            show_all_comp=args.show_all_comp,
+            approved_choice=approved_choice,
+        )
+        all_downloaded_logs.extend(day_logs)
+
+    # Parse FAILED cases once, after all selected days are processed.
+    parse_downloaded_logs(all_downloaded_logs)
 
     print(f"\n{'='*70}")
     print(f"  Done. Processed {len(selected_days)} day(s) for release {version}.")

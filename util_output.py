@@ -9,6 +9,7 @@ _RED = "\033[91m"
 _GREEN = "\033[92m"
 _YELLOW = "\033[93m"
 _BLUE = "\033[96m"
+_LIGHT_BLUE = "\033[94m"
 _LIGHT_BROWN = "\033[38;5;180m"
 _RESET = "\033[0m"
 _ANSI_RE = re.compile(r"\033\[[0-9;]*m")
@@ -209,13 +210,25 @@ def print_all_components(all_apps: dict, dc_names: dict, target_components: dict
 
 
 def print_xpas_failed_cases(log_path: str, prefix: str = "[util_xpas]") -> None:
-    """Print XPAS failed test cases from short test summary info in blue."""
+    """Print XPAS failed test cases from short test summary info.
+
+    Only highlights the exact failed-case name "test_07_exception_domains"
+    in light blue.
+    """
     failed_cases = parse_failed_cases_from_file(log_path)
     if not failed_cases:
         print(f"{prefix} No FAILED cases found in short test summary info.")
         return
 
+    target_case_name = "test_07_exception_domains"
+
+    def _highlight_target_case(text: str) -> str:
+        return text.replace(
+            target_case_name,
+            f"{_LIGHT_BLUE}{target_case_name}{_RESET}",
+        )
+
     lines = format_failed_cases_for_display(failed_cases)
-    print(f"{_BLUE}{prefix} {lines[0]}{_RESET}")
+    print(f"{prefix} {lines[0]}")
     for line in lines[1:]:
-        print(f"{_BLUE}{prefix} {line}{_RESET}")
+        print(f"{prefix} {_highlight_target_case(line)}")

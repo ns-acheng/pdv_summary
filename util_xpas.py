@@ -16,7 +16,7 @@ import contextlib
 import io
 import os
 import re
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import time
 
@@ -32,6 +32,7 @@ DEFAULT_URL = (
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.path.join(SCRIPT_DIR, "cache-xpas")
 SEC_CH_UA = '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"'
+_LAST_SUCCESS_FQDN: str | None = None
 
 
 def ensure_cache_dir() -> None:
@@ -213,9 +214,12 @@ def fetch_and_analyze(
     *cookie* is auto-extracted from the Chrome local-profile session when omitted.
     """
     # Ensure URL ends with /consoleFull
+    global _LAST_SUCCESS_FQDN
+
     clean_url = jenkins_url.rstrip("/")
     if not clean_url.endswith("/consoleFull"):
         clean_url = clean_url.rstrip("/console").rstrip("/consoleText") + "/consoleFull"
+    current_fqdn = (urlparse(clean_url).hostname or "").strip().lower()
 
     max_retries = 3
     retry_delay = 10  # seconds
@@ -287,6 +291,8 @@ def fetch_and_analyze(
                 f"{prefix} Saved plain-text log to: "
                 f"{_LIGHT_BROWN}{saved_text}{_RESET}"
             )
+            if current_fqdn:
+                _LAST_SUCCESS_FQDN = current_fqdn
             if not concise_output:
                 print(f"{prefix} Retrieved {len(plain_text)} characters of plain text.")
                 print_xpas_failed_cases(saved_text, prefix=prefix)
@@ -305,6 +311,18 @@ def fetch_and_analyze(
                 continue
             print(f"{prefix} HTTP error ({status}): {exc}")
             if status == 403 and is_chrome_debug_running():
+                if _LAST_SUCCESS_FQDN and current_fqdn and _LAST_SUCCESS_FQDN != current_fqdn:
+                    print(
+                        f"{prefix} Detected Jenkins FQDN changed from "
+                        f"{_LAST_SUCCESS_FQDN} to {current_fqdn}."
+                    )
+                    print(
+                        f"{prefix} Chrome may still be using old-site session context."
+                    )
+                    print(
+                        f"{prefix} Please reopen Chrome, open the new Jenkins site once, "
+                        "then run the tool again."
+                    )
                 print(
                     f"{prefix} Chrome debug session is running on port 9222, "
                     "but request is still 403."
