@@ -63,7 +63,7 @@ python pdv_summary.py 136.0 prod
 All arguments are optional. If omitted, an interactive menu is shown.
 
 ```
-python pdv_parser.py [version] [env] [day_number] [--show-all-comp] [--sync-releases]
+python pdv_parser.py [version] [env] [day_number] [--show-all-comp] [--sync-releases] [--dc DATACENTER]
 ```
 
 ### Examples
@@ -88,7 +88,14 @@ python pdv_parser.py 135.0 all
 
 # Show all components (not just client/nsclient)
 python pdv_parser.py 135.0 prod --show-all-comp
+
+# Cache-only datacenter lookup (client/nsclient focus)
+python pdv_summary.py 135.0 --dc DFW3
 ```
+
+`--dc` mode reads cached `cache/component_data_<version>_*.json` files (no live API fetch),
+filters by datacenter name, prints the same colorized table style, and checks whether
+corresponding logs exist in `cache-xpas/`.
 
 ### Arguments
 
@@ -98,6 +105,7 @@ python pdv_parser.py 135.0 prod --show-all-comp
 | `env` | `staging`, `preprod`, `prod`, `all` | Environment / day filter |
 | `day_number` | `1`, `2`, `3`, `4` | Day number (for `preprod` or `prod`) |
 | `--show-all-comp` | (flag) | Show all components (default: only client/nsclient) |
+| `--dc` | e.g. `DFW3` | Cache-only datacenter query for a release version; outputs client/nsclient rows and checks `cache-xpas` logs |
 | `--sync-releases` | (flag) | Sync `releases.json` from API (auto-discover release days); ignores other args |
 
 ## Output example

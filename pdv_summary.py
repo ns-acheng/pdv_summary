@@ -17,6 +17,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(SCRIPT_DIR, "data")
 SERVICE_MAPPING_FILE = os.path.join(DATA_DIR, "service_mpapping.json")
 CACHE_DIR = os.path.join(SCRIPT_DIR, "cache")
+XPAS_CACHE_DIR = os.path.join(SCRIPT_DIR, "cache-xpas")
 TOKEN_FILE = os.path.join(DATA_DIR, "token.txt")
 DC_CACHE_FILE = os.path.join(CACHE_DIR, "dc_names.json")
 RELEASES_FILE = os.path.join(DATA_DIR, "releases.json")
@@ -319,7 +320,6 @@ def refresh_token(reason: str) -> str:
     token = get_token_from_browser()
     if token and token.startswith("eyJ"):
         save_token(token)
-        print("[token] Token refreshed from browser.")
         return token
     print("[token] Browser fetch failed or Chrome not running with --remote-debugging-port=9222.")
     return prompt_and_save_token("Please paste your Bearer token manually.")
@@ -623,7 +623,6 @@ def fetch_with_retry(token: str, profile: dict):
         except requests.exceptions.HTTPError as exc:
             if exc.response is not None and exc.response.status_code == 403:
                 token = refresh_token("Token is expired or invalid (403).")
-                print("Retrying with new token ...")
                 continue
             raise
 
@@ -965,11 +964,131 @@ def parse_downloaded_logs(downloaded_logs: list[tuple[int, str, str]]) -> None:
         print_xpas_failed_cases(log_path, prefix="[pdv]")
 
 
+def _component_cache_tail(file_path: str, version: str) -> str | None:
+    """Return the tail part from component_data_<version>_<tail>.json."""
+    name = os.path.basename(file_path)
+    prefix = f"component_data_{version}_"
+    suffix = ".json"
+    if not (name.startswith(prefix) and name.endswith(suffix)):
+        return None
+    return name[len(prefix):-len(suffix)]
+
+
+def _tail_to_display_label(tail: str) -> str:
+    """Convert cache filename tail to human label.
+    Example: prod_day_3 -> prod day 3
+    """
+    return tail.replace("_", " ")
+
+
+def _tail_to_env_day_token(tail: str) -> str:
+    """Convert cache filename tail to XPAS filename env-day token.
+    Example: prod_day_3 -> prod_day3
+    """
+    return re.sub(r"_day_(\d+)$", r"_day\1", tail.strip().lower())
+
+
+def _iter_component_cache_files(version: str) -> list[str]:
+    """Return all component_data cache files for a given version."""
+    if not os.path.isdir(CACHE_DIR):
+        return []
+    prefix = f"component_data_{version}_"
+    paths = []
+    for name in os.listdir(CACHE_DIR):
+        if name.startswith(prefix) and name.endswith(".json"):
+            paths.append(os.path.join(CACHE_DIR, name))
+    return sorted(paths)
+
+
+def _filter_apps_by_datacenter_name(all_apps: dict, dc_query: str) -> dict:
+    """Keep only datacenters matching dc_query (case-insensitive exact)."""
+    needle = (dc_query or "").strip().lower()
+    filtered: dict = {}
+    for app_name, components in all_apps.items():
+        kept_components: dict = {}
+        for comp_id, comp_data in components.items():
+            dcs = comp_data.get("datacenters", {})
+            kept_dcs = {}
+            for dc_id, dc_info in dcs.items():
+                dc_name = str(dc_info.get("datacenterName", "")).strip().lower()
+                if dc_name == needle:
+                    kept_dcs[dc_id] = dc_info
+            if kept_dcs:
+                kept_components[comp_id] = {"datacenters": kept_dcs}
+        if kept_components:
+            filtered[app_name] = kept_components
+    return filtered
+
+
+def _find_xpas_logs_for_dc(version: str, env_day_token: str, dc_query: str) -> list[str]:
+    """Find cached XPAS logs matching version + env/day + datacenter suffix."""
+    if not os.path.isdir(XPAS_CACHE_DIR):
+        return []
+    suffix = f"_{version.lower()}_{env_day_token}_{dc_query.lower()}.txt"
+    matches = []
+    for name in os.listdir(XPAS_CACHE_DIR):
+        if name.lower().endswith(suffix):
+            matches.append(os.path.join(XPAS_CACHE_DIR, name))
+    return sorted(matches)
+
+
+def show_cached_datacenter_view(version: str, dc_query: str, show_all_comp: bool = False) -> None:
+    """Show cached component data filtered by datacenter and related XPAS logs."""
+    dc_query = (dc_query or "").strip()
+    cache_files = _iter_component_cache_files(version)
+    if not cache_files:
+        print(f"[cache] No component_data cache files found for version {version}.")
+        return
+
+    dc_names = load_dc_cache()
+    found_any = False
+
+    print(f"\n{'='*70}")
+    print(f"  Cache view for release {version} / datacenter {dc_query}")
+    print(f"{'='*70}")
+
+    for cache_file in cache_files:
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                all_apps = json.load(f)
+        except Exception as exc:
+            print(f"[cache] Failed to load {cache_file}: {exc}")
+            continue
+
+        filtered = _filter_apps_by_datacenter_name(all_apps, dc_query)
+        if not filtered:
+            continue
+
+        found_any = True
+        tail = _component_cache_tail(cache_file, version) or "unknown"
+        day_label = _tail_to_display_label(tail)
+        env_day_token = _tail_to_env_day_token(tail)
+
+        print(f"\n{'#'*70}")
+        print(f"  {version} / {day_label}  (from cache)")
+        print(f"{'#'*70}")
+        # Keep cache --dc output aligned with PDV focus: Client / NSClient only.
+        print_all_components(filtered, dc_names, TARGET_COMPONENTS, show_all_comp=False)
+
+        log_matches = _find_xpas_logs_for_dc(version, env_day_token, dc_query)
+        if log_matches:
+            print(f"\n[pdv] Found {len(log_matches)} cached log(s) in cache-xpas:")
+            for path in log_matches:
+                rel_path = os.path.relpath(path, SCRIPT_DIR)
+                print(f"[pdv]   {_LIGHT_BROWN}{rel_path}{_RESET}")
+        else:
+            print("\n[pdv] No corresponding cached logs found in cache-xpas.")
+
+    if not found_any:
+        print(f"\n[cache] No cached component data found for datacenter {dc_query} in version {version}.")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("version", nargs="?", help="Release version (e.g. 135.0)")
     parser.add_argument("env", nargs="?", help="Environment (prod, preprod, staging, all)")
     parser.add_argument("day", nargs="?", help="Day number (e.g. 1, 2, 3, 4)")
+    parser.add_argument("--dc", dest="dc", default="", help="Datacenter name to query from cached component_data files (e.g. DFW3)")
     parser.add_argument("--show-all-comp", dest="show_all_comp", action="store_true", default=True, help="Show all components (default: True)")
     args = parser.parse_args()
 
@@ -997,6 +1116,11 @@ def main():
         version = args.version
     else:
         version = choose_version(releases)
+
+    if args.dc:
+        show_cached_datacenter_view(version, args.dc, show_all_comp=args.show_all_comp)
+        return
+
     days = releases[version]["days"]
     if args.env:
         env_arg = args.env.lower()
