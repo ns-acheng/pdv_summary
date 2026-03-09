@@ -121,12 +121,26 @@ def _build_dc_rows(datacenters: dict, dc_names: dict):
     def get_type(app_name):
         if app_name is None:
             return ""
+        if app_name.startswith("DPServices_Compliance"):
+            return "DP_Comp"
+        if app_name.startswith("DPServices"):
+            return "DP"
+        if app_name.startswith("DP_Manual_Compliance"):
+            return "DP_Manual_Comp"
+        if app_name.startswith("DP_Manual"):
+            return "DP_Manual"
+        if app_name.startswith("DP_Compliance"):
+            return "DP_Comp"
+        if app_name.startswith("DP"):
+            return "DP"
         if app_name.startswith("MPServices_Compliance"):
             return "MP_Comp"
         if app_name.startswith("MPServices"):
             return "MP"
         if app_name.startswith("MP_Manual_Compliance"):
             return "MP_Manual_Comp"
+        if app_name.startswith("MP_Manual"):
+            return "MP_Manual"
         if app_name.startswith("MP_Compliance"):
             return "MP_Comp"
         if app_name.startswith("MP"):
@@ -205,7 +219,12 @@ def print_all_components(all_apps: dict, dc_names: dict, target_components: dict
                 datacenters["__type_hint__"] = app_name
             headers, rows = _build_dc_rows(datacenters, dc_names)
             friendly = target_components.get(comp_id, f"(unknown: {comp_id})")
-            title = f"{friendly} ({comp_id})"
+            friendly_display = (
+                f"{_LIGHT_BLUE}{friendly}{_RESET}"
+                if comp_id in target_components
+                else friendly
+            )
+            title = f"{friendly_display} ({comp_id})"
             _print_table(title, headers, rows)
 
 

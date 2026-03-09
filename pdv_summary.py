@@ -15,7 +15,7 @@ if sys.platform == "win32":
 BASE_API = "https://insights-platform.netskope.io/releasemgmtserv/v1"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(SCRIPT_DIR, "data")
-SERVICE_MAPPING_FILE = os.path.join(DATA_DIR, "service_mpapping.json")
+COMPONENT_MAPPING_FILE = os.path.join(DATA_DIR, "component_mapping.json")
 CACHE_DIR = os.path.join(SCRIPT_DIR, "cache")
 XPAS_CACHE_DIR = os.path.join(SCRIPT_DIR, "cache-xpas")
 TOKEN_FILE = os.path.join(DATA_DIR, "token.txt")
@@ -30,13 +30,13 @@ SYNC_DASHBOARD_IDS = {1: "release", 16: "staging-release"}
 
 def load_target_components():
     try:
-        with open(SERVICE_MAPPING_FILE, "r", encoding="utf-8") as f:
+        with open(COMPONENT_MAPPING_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"Warning: {SERVICE_MAPPING_FILE} not found. No components will be targeted.")
+        print(f"Warning: {COMPONENT_MAPPING_FILE} not found. No components will be targeted.")
         return {}
     except Exception as e:
-        print(f"Warning: Failed to load {SERVICE_MAPPING_FILE}: {e}")
+        print(f"Warning: Failed to load {COMPONENT_MAPPING_FILE}: {e}")
         return {}
 
 TARGET_COMPONENTS = load_target_components()
@@ -782,16 +782,22 @@ def save_dc_cache(mapping: dict):
 
 # ── Data extraction & display ─────────────────────────────────────────────────
 
-def extract_all_components(data: dict) -> dict:
+def extract_all_components(data: dict, include_all: bool = False) -> dict:
     """Extract target components from ALL applications.
     Returns {app_name: {component_id: component_data, ...}, ...}
-    Only includes components listed in TARGET_COMPONENTS.
+    Includes all components when include_all=True;
+    otherwise only components listed in TARGET_COMPONENTS.
     """
     results = {}
     for app_name, app_data in data.get("applications", {}).items():
         components = app_data.get("components", {})
-        filtered = {cid: cdata for cid, cdata in components.items()
-                    if cid in TARGET_COMPONENTS}
+        if include_all:
+            filtered = dict(components)
+        else:
+            filtered = {
+                cid: cdata for cid, cdata in components.items()
+                if cid in TARGET_COMPONENTS
+            }
         if filtered:
             results[app_name] = filtered
     return results
@@ -896,9 +902,6 @@ def process_day(
     approved_choice: bool | None = None,
 ):
     """Fetch, display, and save data for one release day."""
-    import inspect
-    frame = inspect.currentframe().f_back
-    show_all_comp = frame.f_locals.get('show_all_comp', False)
     label = day["label"]
     rid = day["release_day_id"]
     safe_label = label.replace(" ", "_")
@@ -920,7 +923,7 @@ def process_day(
         json.dump(data, f, indent=2)
 
     # Extract & display
-    all_apps = extract_all_components(data)
+    all_apps = extract_all_components(data, include_all=show_all_comp)
 
     print(f"\n{'#'*70}")
     print(f"  {version} / {label}  (release_day_id={rid})")
@@ -1111,7 +1114,7 @@ def main():
     parser.add_argument("env", nargs="?", help="Environment (prod, preprod, staging, all)")
     parser.add_argument("day", nargs="?", help="Day number (e.g. 1, 2, 3, 4)")
     parser.add_argument("--dc", dest="dc", default="", help="Datacenter name to query from cached component_data files (e.g. DFW3)")
-    parser.add_argument("--show-all-comp", dest="show_all_comp", action="store_true", default=True, help="Show all components (default: True)")
+    parser.add_argument("--show-all-comp", dest="show_all_comp", action="store_true", default=False, help="Show all components (default: False)")
     args = parser.parse_args()
 
     ensure_data_dir()

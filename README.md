@@ -24,7 +24,7 @@ Just run `pdv_parser.py` as normal. On a missing/expired token it will:
 3. Fall back to a manual paste prompt only if the browser fetch fails
 
 2. **Releases**: Release versions and their day mappings are defined in `data/releases.json`. 
-   - Use `--sync-releases` to auto-discover releases from the API (see below).
+   - Use `--sync-releases` **with a version** to auto-discover release days from the API (see below).
    - Alternatively, manually add entries to `releases.json` if needed.
 
 3. **DC Mapping**: Manual datacenter GUID → name mappings live in `data/dc_mapping.json`. Add entries as you discover them.
@@ -33,7 +33,10 @@ Just run `pdv_parser.py` as normal. On a missing/expired token it will:
 
 ## Syncing Releases from API
 
-Release day mappings (`release_day_id` per version/day) are maintained in `data/releases.json`. Rather than manually editing this file, use the `--sync-releases` flag to auto-discover all releases and their days from the Insights Platform API.
+Release day mappings (`release_day_id` per version/day) are maintained in `data/releases.json`. Rather than manually editing this file, use the `--sync-releases` flag with an explicit version (for example `136.0`) to auto-discover release days from the Insights Platform API.
+
+> **Invalid command:** `python pdv_summary.py --sync-releases`  
+> Global/all-version sync is not supported.
 
 **How it works:**
 - Queries the release-management API to list all release versions
@@ -98,7 +101,7 @@ corresponding logs exist in `cache-xpas/`.
 | `day_number` | `1`, `2`, `3`, `4` | Day number (for `preprod` or `prod`) |
 | `--show-all-comp` | (flag) | Show all components (default: only client/nsclient) |
 | `--dc` | e.g. `DFW3` | Cache-only datacenter query for a release version; outputs client/nsclient rows and checks `cache-xpas` logs |
-| `--sync-releases` | (flag) | Sync `releases.json` from API (auto-discover release days); ignores other args |
+| `--sync-releases` | (flag) | Sync release days for the specified `version` only. `python pdv_summary.py --sync-releases` is invalid |
 
 ## Output example
 <img width="1567" height="821" alt="image" src="https://github.com/user-attachments/assets/f69afb2e-db78-4726-a950-a7318ee9c5aa" />
