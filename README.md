@@ -72,29 +72,17 @@ python pdv_summary.py 135.0 prod 4
 # All prod days
 python pdv_summary.py 135.0 prod
 
-# All days for a version
+# All days for staging, preprod and prod
 python pdv_summary.py 135.0 all
 
 # Show all components (not just client/nsclient)
 python pdv_summary.py 135.0 prod --show-all-comp
 
-# Cache-only datacenter lookup (client/nsclient focus)
+# Cache-only datacenter lookup
 python pdv_summary.py 135.0 --dc DFW3
 
-# Cache-only datacenter lookup with XPAS parsing (if cached logs exist)
-python pdv_summary.py 135.0 --dc fed01-dp-preprod
-
-# Datacenter lookup requires version (shows usage if omitted)
-python pdv_summary.py --dc fed01-dp-preprod
-
-# Sync a single new version (e.g. 136.0)
+# Sync release days for a new version (e.g. 136.0)
 python pdv_summary.py 136.0 --sync-releases
-
-# Sync all versions (pulls latest from API; takes ~5-10 min for 60+ versions)
-python pdv_summary.py --sync-releases
-
-# Then use normally
-python pdv_summary.py 136.0 prod
 ```
 
 `--dc` mode reads cached `cache/component_data_<version>_*.json` files (no live API fetch),
