@@ -404,7 +404,7 @@ def _safe_name_part(value: str, default: str = "unknown") -> str:
     return text or default
 
 
-def _short_app_name(value: str) -> str:
+def _short_app_name(value: str, *, compact_for_preprod_staging: bool = False) -> str:
     """Build a compact app token for filenames.
     Example: "MP Compliance" -> "MPComp"
     """
@@ -417,9 +417,15 @@ def _short_app_name(value: str) -> str:
         return "APP"
 
     first = tokens[0]
+    if compact_for_preprod_staging and first.lower().endswith("services"):
+        base = first[: -len("Services")]
+        if base:
+            first = base
     parts = [first]
     for token in tokens[1:]:
         low = token.lower()
+        if compact_for_preprod_staging and low == "services":
+            continue
         if low == "compliance":
             parts.append("Comp")
         else:
@@ -435,18 +441,26 @@ def _build_log_filename(console_url: str, label: str, profile: dict) -> str:
     """
     job_name, build_number = parse_job_build(console_url)
 
+    version = _safe_name_part(profile.get("releaseVersion", "unknown"), "unknown")
+    env = _safe_name_part(profile.get("releaseType", "prod"), "prod").lower()
+    release_day = str(profile.get("releaseDay", "")).strip().lower()
+
+    compact_for_preprod_staging = env == "preprod" or release_day == "staging"
+
     app_name = "APP"
     dc_name = "DC"
     if " / " in label:
         left, right = label.split(" / ", 1)
-        app_name = _short_app_name(left)
+        app_name = _short_app_name(
+            left,
+            compact_for_preprod_staging=compact_for_preprod_staging,
+        )
         dc_name = _safe_name_part(right, "DC")
     else:
-        app_name = _short_app_name(label)
-
-    version = _safe_name_part(profile.get("releaseVersion", "unknown"), "unknown")
-    env = _safe_name_part(profile.get("releaseType", "prod"), "prod").lower()
-    release_day = str(profile.get("releaseDay", "")).strip().lower()
+        app_name = _short_app_name(
+            label,
+            compact_for_preprod_staging=compact_for_preprod_staging,
+        )
 
     m = re.search(r"day\s*(\d+)", release_day, re.IGNORECASE)
     if m:
@@ -1076,11 +1090,19 @@ def show_cached_datacenter_view(version: str, dc_query: str, show_all_comp: bool
             for path in log_matches:
                 rel_path = os.path.relpath(path, SCRIPT_DIR)
                 print(f"[pdv]   {_LIGHT_BROWN}{rel_path}{_RESET}")
+            print("\n[pdv] ── Parsing FAILED cases from cached logs ──")
+            for path in log_matches:
+                log_name = os.path.basename(path)
+                display_rel_path = os.path.join("cache-xpas", log_name)
+                print(f"\n[pdv] {_LIGHT_BROWN}{display_rel_path}{_RESET}")
+                print_xpas_failed_cases(path, prefix="[pdv]")
         else:
             print("\n[pdv] No corresponding cached logs found in cache-xpas.")
 
     if not found_any:
         print(f"\n[cache] No cached component data found for datacenter {dc_query} in version {version}.")
+        print(f"\n[cache] Please remove --dc to download corresponding data for the datacenter.")
+        
 
 
 def main():
@@ -1095,6 +1117,13 @@ def main():
     ensure_data_dir()
 
     releases = load_releases()
+
+    if args.dc and not args.version:
+        print("[usage] --dc requires an explicit release version.")
+        print("[usage] Examples:")
+        print("  python pdv_summary.py 135.0 --dc fed01-dp-preprod")
+        print("  python pdv_summary.py 135.0 --dc fed01-dp-preprod --show-all-comp")
+        return
 
     # Auto-sync when user requests a version not present in releases.json
     if args.version and args.version not in releases:

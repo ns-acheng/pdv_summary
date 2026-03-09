@@ -14,7 +14,7 @@ import textwrap
 from typing import Iterable
 
 SHORT_SUMMARY_MARKER = "short test summary info"
-FAILED_LINE_RE = re.compile(r"^FAILED\s+(\S+)(?:\s+-\s+(.*))?$")
+SUMMARY_LINE_RE = re.compile(r"^(FAILED|ERROR)\s+(\S+)(?:\s+-\s+(.*))?$")
 
 
 def normalize_line(line: str) -> str:
@@ -62,16 +62,17 @@ def get_short_test_summary_lines(lines: list[str]) -> list[str]:
 
 
 def parse_failed_cases_from_summary(summary_lines: list[str]) -> list[dict]:
-    """Parse failed test case entries from short test summary lines."""
+    """Parse failed/error test case entries from short test summary lines."""
     failed = []
     for line in summary_lines:
-        match = FAILED_LINE_RE.match(line.strip())
+        match = SUMMARY_LINE_RE.match(line.strip())
         if not match:
             continue
         failed.append(
             {
-                "nodeid": match.group(1),
-                "reason": (match.group(2) or "").strip(),
+                "status": match.group(1),
+                "nodeid": match.group(2),
+                "reason": (match.group(3) or "").strip(),
                 "raw": line.strip(),
             }
         )
@@ -95,20 +96,29 @@ def parse_failed_cases_from_file(file_path: str) -> list[dict]:
 def format_failed_cases_for_display(
     failed_cases: list[dict],
     width: int = 110,
+    max_lines_per_case: int = 3,
 ) -> list[str]:
     """Format failed cases into readable wrapped lines for terminal output."""
     lines = [f"Found {len(failed_cases)} failed case(s):"]
     for idx, case in enumerate(failed_cases, 1):
-        lines.append(f"{idx}. {case['nodeid']}")
+        case_lines = [f"{idx}. {case['nodeid']}"]
         if not case.get("reason"):
+            lines.extend(case_lines[:max_lines_per_case])
             continue
+
         reason_block = textwrap.fill(
             f"- {case['reason']}",
             width=width,
             initial_indent="   ",
             subsequent_indent="   ",
         )
-        lines.append(reason_block)
+        case_lines.extend(reason_block.splitlines())
+
+        if len(case_lines) > max_lines_per_case:
+            case_lines = case_lines[:max_lines_per_case]
+            case_lines[-1] = case_lines[-1].rstrip() + " ..."
+
+        lines.extend(case_lines)
     return lines
 
 

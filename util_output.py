@@ -212,23 +212,29 @@ def print_all_components(all_apps: dict, dc_names: dict, target_components: dict
 def print_xpas_failed_cases(log_path: str, prefix: str = "[util_xpas]") -> None:
     """Print XPAS failed test cases from short test summary info.
 
-    Only highlights the exact failed-case name "test_07_exception_domains"
-    in light blue.
+        Highlights failed-case test names in light blue, including:
+            - test_<number>...
+            - ClassName::test_...
     """
     failed_cases = parse_failed_cases_from_file(log_path)
     if not failed_cases:
         print(f"{prefix} No FAILED cases found in short test summary info.")
         return
 
-    target_case_name = "test_07_exception_domains"
+    numbered_test_pattern = re.compile(r"\b(test_\d+[A-Za-z0-9_]*)\b")
+    class_test_pattern = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*::test_[A-Za-z0-9_]+)\b")
 
-    def _highlight_target_case(text: str) -> str:
-        return text.replace(
-            target_case_name,
-            f"{_LIGHT_BLUE}{target_case_name}{_RESET}",
+    def _highlight_target_cases(text: str) -> str:
+        text = class_test_pattern.sub(
+            lambda m: f"{_LIGHT_BLUE}{m.group(1)}{_RESET}",
+            text,
+        )
+        return numbered_test_pattern.sub(
+            lambda m: f"{_LIGHT_BLUE}{m.group(1)}{_RESET}",
+            text,
         )
 
     lines = format_failed_cases_for_display(failed_cases)
     print(f"{prefix} {lines[0]}")
     for line in lines[1:]:
-        print(f"{prefix} {_highlight_target_case(line)}")
+        print(f"{prefix} {_highlight_target_cases(line)}")
