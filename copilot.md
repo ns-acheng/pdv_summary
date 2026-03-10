@@ -17,17 +17,18 @@ Primary workspace root:
 
 - `pdv_summary.py`
   - Main CLI app for PDV data retrieval, release sync, extraction, and cache output.
-  - Uses `util_token.py` for browser token retrieval.
+  - Uses `util_browser.py` for browser token retrieval.
   - Uses `util_output.py` for console/table rendering.
 
 - `util_output.py`
   - Houses output/table formatting logic extracted from `pdv_summary.py`.
   - PDV Reason column was intentionally removed from display output.
 
-- `util_token.py`
-  - Retrieves Bearer token from Chrome remote debugging and persists to `data/token.txt`.
+- `util_browser.py`
+  - Shared browser helpers for token retrieval + cookie extraction.
+  - Includes token persistence helper to `data/token.txt`.
 
-- `util_xpas.py` (POC)
+- `util_xpas.py`
   - Fetches Jenkins `consoleFull` HTML.
   - Parses `consoleText` link from HTML and fetches plain text logs.
   - Stores outputs under `cache-xpas/`.

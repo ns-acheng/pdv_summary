@@ -5,6 +5,7 @@ Provides:
 - Browser launch with remote debugging
 - Cookie extraction for a target host
 - Netskope bearer token extraction from localStorage
+- Optional token persistence helper (data/token.txt)
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ DEFAULT_DASHBOARD_URL = (
 )
 TOKEN_KEYS = ["token", "access_token", "id_token"]
 OKTA_TOKEN_KEY = "okta-token-storage"
+TOKEN_FILE = os.path.join(SCRIPT_DIR, "data", "token.txt")
 
 
 def launch_chrome(
@@ -58,21 +60,94 @@ def wait_for_tabs(
 ) -> list[dict] | None:
     """Poll for tabs until Chrome debug endpoint is reachable or timeout."""
     poll_interval = 2
-    for attempt in range(1, max_wait // poll_interval + 1):
+    for elapsed in range(0, max_wait + 1, poll_interval):
+        try:
+            return get_tabs(debug_url)
+        except requests.exceptions.RequestException:
+            pass
+        if elapsed >= max_wait:
+            break
         print(
             f"{prefix} Waiting for Chrome ... "
-            f"({attempt * poll_interval}/{max_wait}s)",
+            f"({min(elapsed + poll_interval, max_wait)}/{max_wait}s)",
             end="\r",
         )
         time.sleep(poll_interval)
-        try:
-            tabs = get_tabs(debug_url)
-            print()
-            return tabs
-        except requests.exceptions.RequestException:
-            continue
     print()
     return None
+
+
+def wait_for_target_tab(
+    target_host: str,
+    debug_url: str = DEBUG_URL,
+    max_wait: int = 60,
+    prefix: str = "[util_browser]",
+) -> dict | None:
+    """Poll Chrome tabs until a tab matching target_host appears or timeout."""
+    poll_interval = 2
+    for elapsed in range(0, max_wait + 1, poll_interval):
+        try:
+            tabs = get_tabs(debug_url)
+            match = find_tab_by_host(tabs, target_host)
+            if match:
+                return match
+        except requests.exceptions.RequestException:
+            pass
+        if elapsed >= max_wait:
+            break
+        print(
+            f"{prefix} Waiting for tab {target_host} ... "
+            f"({min(elapsed + poll_interval, max_wait)}/{max_wait}s)",
+            end="\r",
+        )
+        time.sleep(poll_interval)
+    print()
+    return None
+
+
+def ensure_target_tab(
+    target_host: str,
+    launch_url: str,
+    debug_url: str = DEBUG_URL,
+    prefix: str = "[util_browser]",
+    tab_wait: int = 60,
+) -> dict | None:
+    """Ensure a tab for target_host exists, launching Chrome/dashboard when needed."""
+    tabs = None
+    launched = False
+
+    try:
+        tabs = get_tabs(debug_url)
+    except requests.exceptions.RequestException:
+        launch_chrome(launch_url, prefix=prefix)
+        launched = True
+        tabs = wait_for_tabs(debug_url, prefix=prefix)
+
+    if tabs is None:
+        print(
+            f"\n{prefix} Chrome did not become reachable. "
+            "Close all Chrome windows and retry."
+        )
+        return None
+
+    target_tab = find_tab_by_host(tabs, target_host)
+    if target_tab:
+        return target_tab
+
+    if not launched:
+        launch_chrome(launch_url, prefix=prefix)
+
+    target_tab = wait_for_target_tab(
+        target_host,
+        debug_url=debug_url,
+        max_wait=tab_wait,
+        prefix=prefix,
+    )
+    if not target_tab:
+        print(
+            f"{prefix} No browser tab found for host after waiting: {target_host}"
+        )
+    return target_tab
 
 
 def find_tab_by_host(tabs: list[dict], target_host: str) -> dict | None:
@@ -129,27 +204,13 @@ def get_cookie_from_browser(
     if not target_host:
         return None
 
-    tabs = None
-    try:
-        tabs = get_tabs(debug_url)
-    except requests.exceptions.RequestException:
-        launch_chrome(url, prefix=prefix)
-        tabs = wait_for_tabs(debug_url, prefix=prefix)
-
-    if tabs is None:
-        print(f"{prefix} Chrome debug endpoint is unavailable.")
-        return None
-
-    target_tab = find_tab_by_host(tabs, target_host)
+    target_tab = ensure_target_tab(
+        target_host,
+        launch_url=url,
+        debug_url=debug_url,
+        prefix=prefix,
+    )
     if not target_tab:
-        launch_chrome(url, prefix=prefix)
-        tabs = wait_for_tabs(debug_url, prefix=prefix)
-        if not tabs:
-            return None
-        target_tab = find_tab_by_host(tabs, target_host)
-
-    if not target_tab:
-        print(f"{prefix} No browser tab found for host: {target_host}")
         return None
 
     ws_url = target_tab.get("webSocketDebuggerUrl")
@@ -194,23 +255,14 @@ def get_token_from_browser(
     prefix: str = "[util_token]",
 ) -> str | None:
     """Get Netskope bearer token from browser localStorage using CDP."""
-    tabs = None
-    try:
-        tabs = get_tabs(debug_url)
-    except requests.exceptions.RequestException:
-        launch_chrome(dashboard_url, prefix=prefix)
-        tabs = wait_for_tabs(debug_url, prefix=prefix)
-
-    if tabs is None:
-        print(
-            f"\n{prefix} Chrome did not become reachable. "
-            "Close all Chrome windows and retry."
-        )
-        return None
-
-    target_tab = find_tab_by_host(tabs, "insights.netskope.io")
+    target_tab = ensure_target_tab(
+        "insights.netskope.io",
+        launch_url=dashboard_url,
+        debug_url=debug_url,
+        prefix=prefix,
+        tab_wait=60,
+    )
     if not target_tab:
-        print(f"{prefix} No insights.netskope.io tab found. Open dashboard and retry.")
         return None
 
     ws_url = target_tab.get("webSocketDebuggerUrl")
@@ -310,3 +362,30 @@ def get_token_from_browser(
         token = token[7:].strip()
 
     return token
+
+
+def fetch_and_save_token(
+    debug_url: str = DEBUG_URL,
+    dashboard_url: str = DEFAULT_DASHBOARD_URL,
+    token_file: str = TOKEN_FILE,
+    prefix: str = "[util_token]",
+) -> str | None:
+    """Fetch token from browser and persist it to token_file.
+
+    Returns the token string, or None if unavailable.
+    """
+    token = get_token_from_browser(
+        debug_url=debug_url,
+        dashboard_url=dashboard_url,
+        prefix=prefix,
+    )
+    if token:
+        os.makedirs(os.path.dirname(token_file), exist_ok=True)
+        with open(token_file, "w", encoding="utf-8") as f:
+            f.write(token)
+        print(f"{prefix} Token saved to {token_file}")
+    return token
+
+
+if __name__ == "__main__":
+    fetch_and_save_token()

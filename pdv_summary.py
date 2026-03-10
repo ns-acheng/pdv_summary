@@ -1,11 +1,13 @@
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 import re
 import requests
 import json
 import os
 import sys
 from datetime import datetime
-from util_token import get_token_from_browser
+from util_browser import get_cookie_from_browser, get_token_from_browser
 from util_output import print_all_components, print_xpas_failed_cases
 from util_xpas import fetch_and_analyze, parse_job_build
 
@@ -480,6 +482,7 @@ def _build_log_filename(console_url: str, label: str, profile: dict) -> str:
 _AUTO_ANALYZE_STATUSES = {"FAILURE"}             # fetch logs automatically
 _PROMPT_ANALYZE_STATUSES = {"APPROVED"}          # ask user first
 _ALL_ANALYZE_STATUSES = _AUTO_ANALYZE_STATUSES | _PROMPT_ANALYZE_STATUSES
+MAX_XPAS_DOWNLOAD_THREADS = 15
 
 
 def collect_analyzable_component_ids(
@@ -522,13 +525,8 @@ def collect_analyzable_component_ids(
     return auto_ids, prompt_ids
 
 
-def _analyze_component(token: str, rcid: int, label: str, profile: dict,
-                       cookie: str | None = None) -> str | None:
-    """Fetch pdv_runs for a single releaseComponentId, find the latest
-    FAILURE run, and download its Jenkins log.
-
-    Returns saved plain-text log path, or None when unavailable.
-    """
+def _prepare_component_download(token: str, rcid: int, label: str, profile: dict) -> dict | None:
+    """Fetch pdv_runs and build download metadata for one component."""
     try:
         runs = fetch_pdv_runs(token, rcid, profile)
     except Exception as exc:
@@ -561,16 +559,117 @@ def _analyze_component(token: str, rcid: int, label: str, profile: dict,
     )
 
     created_at = latest.get("createdAt", "unknown")
-    print(f"[pdv]   Latest FAILURE run: createdAt={created_at}")
-    print(f"[pdv]   Jenkins URL: {console_url}")
+    return {
+        "rcid": rcid,
+        "label": label,
+        "console_url": console_url,
+        "log_filename": log_filename,
+        "display_rel_path": display_rel_path,
+        "created_at": created_at,
+    }
+
+
+def _download_prepared_component(
+    item: dict,
+    cookie: str | None = None,
+    prefix: str = "[pdv]",
+) -> str | None:
+    """Download Jenkins log for one prepared component item."""
+    label = item["label"]
+    rcid = item["rcid"]
+    console_url = item["console_url"]
+    log_filename = item["log_filename"]
+    display_rel_path = item["display_rel_path"]
+    created_at = item["created_at"]
+
+    pretty_label = _colorize_prompt_label(label)
+    print(
+        f"\n{prefix} ── {pretty_label}  "
+        f"({_LIGHT_BROWN}{display_rel_path}{_RESET}) ──"
+    )
+    print(f"{prefix}   Latest FAILURE run: createdAt={created_at}")
+    print(f"{prefix}   Jenkins URL: {console_url}")
 
     return fetch_and_analyze(
         console_url,
         cookie=cookie,
-        prefix="[pdv]",
+        prefix=prefix,
         concise_output=True,
         output_text_filename=log_filename,
     )
+
+
+def _download_components_serial_then_parallel(
+    prepared_items: list[dict],
+    cookie: str | None = None,
+) -> list[tuple[int, str, str]]:
+    """Download first item serially (credential bootstrap), then parallelize rest."""
+    if not prepared_items:
+        return []
+
+    downloaded_logs: list[tuple[int, str, str]] = []
+    first = prepared_items[0]
+
+    shared_cookie = cookie
+    if not shared_cookie:
+        shared_cookie = get_cookie_from_browser(first["console_url"], prefix="[pdv]")
+        if not shared_cookie:
+            print("[pdv] Could not prefetch Jenkins cookie; first download will retry cookie extraction.")
+
+    # 1) First component serial download to establish working credential/session.
+    first_saved = _download_prepared_component(first, shared_cookie)
+    if first_saved:
+        downloaded_logs.append((first["rcid"], first["label"], first_saved))
+
+    remaining = prepared_items[1:]
+    if not remaining:
+        return downloaded_logs
+
+    # 2) Parallel downloads for remaining components (bounded to MAX_XPAS_DOWNLOAD_THREADS).
+    worker_count = min(MAX_XPAS_DOWNLOAD_THREADS, len(remaining))
+    print(
+        f"\n[pdv] Downloading remaining {len(remaining)} component log(s) "
+        f"with {worker_count} thread(s)..."
+    )
+
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        slot_lock = threading.Lock()
+        thread_slots: dict[int, int] = {}
+        next_slot = 1
+
+        def worker(item: dict) -> str | None:
+            nonlocal next_slot
+            ident = threading.get_ident()
+            with slot_lock:
+                slot = thread_slots.get(ident)
+                if slot is None:
+                    slot = next_slot
+                    thread_slots[ident] = slot
+                    next_slot += 1
+            return _download_prepared_component(
+                item,
+                shared_cookie,
+                prefix=f"[pdv][th{slot}]",
+            )
+
+        future_map = {
+            executor.submit(worker, item): item
+            for item in remaining
+        }
+        for future in as_completed(future_map):
+            item = future_map[future]
+            try:
+                saved_log = future.result()
+            except Exception as exc:
+                print(
+                    f"[pdv] Failed to download log for releaseComponentId="
+                    f"{item['rcid']}: {exc}"
+                )
+                continue
+            if saved_log:
+                downloaded_logs.append((item["rcid"], item["label"], saved_log))
+
+    return downloaded_logs
 
 
 def analyze_failure_jenkins_logs(
@@ -590,16 +689,16 @@ def analyze_failure_jenkins_logs(
     auto_ids, prompt_ids = collect_analyzable_component_ids(
         all_apps, dc_names, target_components
     )
-    downloaded_logs: list[tuple[int, str, str]] = []
+    prepared_items: list[dict] = []
 
     # ── Auto-analyze FAILURE components ──────────────────────────────────
     if auto_ids:
         print(f"\n[pdv] Found {len(auto_ids)} FAILURE component(s). "
               "Fetching Jenkins logs...")
         for rcid, label in auto_ids.items():
-            saved_log = _analyze_component(token, rcid, label, profile, cookie)
-            if saved_log:
-                downloaded_logs.append((rcid, label, saved_log))
+            item = _prepare_component_download(token, rcid, label, profile)
+            if item:
+                prepared_items.append(item)
 
     # ── Prompt for APPROVED components ──────────────────────────────────
     if prompt_ids:
@@ -620,12 +719,13 @@ def analyze_failure_jenkins_logs(
 
         if approved_choice:
             for rcid, label in prompt_ids.items():
-                saved_log = _analyze_component(token, rcid, label, profile, cookie)
-                if saved_log:
-                    downloaded_logs.append((rcid, label, saved_log))
+                item = _prepare_component_download(token, rcid, label, profile)
+                if item:
+                    prepared_items.append(item)
         else:
             print("[pdv] Skipped APPROVED component analysis.")
 
+    downloaded_logs = _download_components_serial_then_parallel(prepared_items, cookie)
     return downloaded_logs, approved_choice
 
 
@@ -969,7 +1069,7 @@ def parse_downloaded_logs(downloaded_logs: list[tuple[int, str, str]]) -> None:
         print("\n[pdv] No Jenkins logs downloaded; skipped FAILED-case parsing.")
         return
 
-    print("\n[pdv] ── Parsing FAILED cases from downloaded logs ──")
+    print("\n[pdv] ── Parsing cases from downloaded logs ──")
     for _rcid, label, log_path in downloaded_logs:
         pretty_label = _colorize_prompt_label(label)
         log_name = os.path.basename(log_path)
