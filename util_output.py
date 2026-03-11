@@ -27,7 +27,7 @@ def _colorize_status(text: str) -> str:
         return f"{_RED}{text}{_RESET}"
     if up in ("SUCCESS", "APPROVED", "DEPLOYED"):
         return f"{_GREEN}{text}{_RESET}"
-    if up in ("QUEUE", "QUEUED", "RUNNING"):
+    if up in ("QUEUE", "QUEUED", "RUNNING", "IN_PROGRESS"):
         return f"{_YELLOW}{text}{_RESET}"
     if up == "TODO":
         return f"{_BLUE}{text}{_RESET}"
