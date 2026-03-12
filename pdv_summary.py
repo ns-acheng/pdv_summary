@@ -529,6 +529,21 @@ def _prepare_component_download(token: str, rcid: int, label: str, profile: dict
     """Fetch pdv_runs and build download metadata for one component."""
     try:
         runs = fetch_pdv_runs(token, rcid, profile)
+    except requests.exceptions.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 403:
+            token = refresh_token("Token expired or invalid (403 on pdv_runs).")
+            try:
+                runs = fetch_pdv_runs(token, rcid, profile)
+            except Exception as exc2:
+                pretty_label = _colorize_prompt_label(label)
+                print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
+                print(f"[pdv]   Could not fetch pdv_runs after token refresh: {exc2}")
+                return None
+        else:
+            pretty_label = _colorize_prompt_label(label)
+            print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
+            print(f"[pdv]   Could not fetch pdv_runs: {exc}")
+            return None
     except Exception as exc:
         pretty_label = _colorize_prompt_label(label)
         print(f"\n[pdv] ── {pretty_label}  (releaseComponentId={rcid}) ──")
