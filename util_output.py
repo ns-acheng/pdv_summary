@@ -1,6 +1,7 @@
 import re
 from util_log import format_failed_cases_for_display
 from util_log import parse_failed_cases_from_file
+from util_log import find_repeating_patterns_from_file
 
 MAX_COL_WIDTH = 50   # hard cap on any single column width
 
@@ -39,6 +40,18 @@ def _colorize_datacenter(text: str) -> str:
     if not text:
         return text
     return f"{_LIGHT_BROWN}{text}{_RESET}"
+
+
+_STATUS_HIGHLIGHT_RE = re.compile(
+    r"(Client status:\s*\S+|Tunnel status:\s*\S+)"
+)
+
+
+def _colorize_client_status(text: str) -> str:
+    """Highlight 'Client status: <value>' and 'Tunnel status: <value>' in blue."""
+    return _STATUS_HIGHLIGHT_RE.sub(
+        lambda m: f"{_BLUE}{m.group(1)}{_RESET}", text
+    )
 
 
 def _wrap_text(text: str, width: int) -> list:
@@ -234,9 +247,21 @@ def print_xpas_failed_cases(log_path: str, prefix: str = "[util_xpas]") -> None:
         Highlights failed-case test names in light blue, including:
             - test_<number>...
             - ClassName::test_...
+        Falls back to repeating-pattern detection when no pytest summary exists.
     """
     failed_cases = parse_failed_cases_from_file(log_path)
     if not failed_cases:
+        # Fallback: detect repeating patterns (e.g. tunnel connect loops)
+        patterns = find_repeating_patterns_from_file(log_path)
+        if patterns:
+            total = len(patterns)
+            print(f"{prefix} Found {total} failed case(s):")
+            for pat in patterns:
+                print(f"{prefix} Repeating failure for over {pat['count']} times:")
+                for raw_line in pat["raw_lines"]:
+                    colored = _colorize_client_status(raw_line)
+                    print(f"{prefix} {colored}")
+            return
         print(f"{prefix} No FAILED cases found in short test summary info.")
         return
 

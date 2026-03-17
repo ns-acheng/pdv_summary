@@ -109,24 +109,32 @@ def _sync_headers(token: str, dashboard: str = "release", env: str = "prod") -> 
     }
 
 
-def _api_get(token: str, path: str, dashboard: str = "release", env: str = "prod") -> dict:
-    """GET a releasemgmtserv endpoint, return parsed JSON."""
+def _api_get(token: str, path: str, dashboard: str = "release", env: str = "prod") -> tuple[dict, str]:
+    """GET a releasemgmtserv endpoint, return (parsed JSON, token).
+    On 403, refreshes the token and retries."""
     url = f"{BASE_API}/{path}"
-    resp = requests.get(url, headers=_sync_headers(token, dashboard, env), timeout=15)
-    resp.raise_for_status()
-    return resp.json()
+    while True:
+        resp = requests.get(url, headers=_sync_headers(token, dashboard, env), timeout=15)
+        if resp.status_code == 403:
+            token = refresh_token("Token expired or invalid (403 on sync API).")
+            continue
+        resp.raise_for_status()
+        return resp.json(), token
 
 
 def fetch_api_metadata(token: str) -> tuple:
     """Fetch the three reference tables needed for release syncing.
-    Returns (dashboards, days, release_types) dicts keyed by id."""
-    raw_dash = _api_get(token, "dashboards")["dashboards"]
-    raw_days = _api_get(token, "days")["days"]
-    raw_types = _api_get(token, "release_types")["releaseTypes"]
+    Returns (dashboards, days, release_types, token) – token may be refreshed."""
+    data, token = _api_get(token, "dashboards")
+    raw_dash = data["dashboards"]
+    data, token = _api_get(token, "days")
+    raw_days = data["days"]
+    data, token = _api_get(token, "release_types")
+    raw_types = data["releaseTypes"]
     dashboards = {d["id"]: d for d in raw_dash}
     days = {d["id"]: d for d in raw_days}
     release_types = {t["id"]: t for t in raw_types}
-    return dashboards, days, release_types
+    return dashboards, days, release_types, token
 
 
 def _build_day_label(day_name: str, env_name: str) -> str:
@@ -165,11 +173,12 @@ def sync_releases(token: str, version_filter: str = None) -> dict:
     If *version_filter* is given (e.g. '135.0'), only that version is synced.
     """
     print("[sync] Fetching metadata (dashboards, days, release_types) ...")
-    dashboards, days_map, type_map = fetch_api_metadata(token)
+    dashboards, days_map, type_map, token = fetch_api_metadata(token)
 
     # Fetch the full releases list
     print("[sync] Fetching releases list ...")
-    all_releases = _api_get(token, "releases?type=prod")["releases"]
+    data, token = _api_get(token, "releases?type=prod")
+    all_releases = data["releases"]
 
     # Filter to dashboards we care about
     target_releases = [
@@ -198,7 +207,8 @@ def sync_releases(token: str, version_filter: str = None) -> dict:
             rid = rel["id"]
             did = rel["dashboardId"]
             try:
-                rd_list = _api_get(token, f"release_days?releaseId={rid}")["releaseDays"]
+                data, token = _api_get(token, f"release_days?releaseId={rid}")
+                rd_list = data["releaseDays"]
             except Exception as e:
                 print(f"  [warn] Failed to fetch release_days for releaseId={rid}: {e}")
                 continue

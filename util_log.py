@@ -93,6 +93,98 @@ def parse_failed_cases_from_file(file_path: str) -> list[dict]:
     return parse_failed_cases_from_text(text)
 
 
+# ── Repeating-pattern detection ───────────────────────────────────────────────
+
+_TIMESTAMP_RE = re.compile(r"^\[[\dT:.Z-]+\]\s*")
+_SKIP_RE = re.compile(
+    r"^\[Pipeline\]|^Sleeping for ", re.IGNORECASE
+)
+
+REPEAT_THRESHOLD = 10  # minimum occurrences to report
+
+
+def _content_lines(raw_lines: list[str]) -> list[tuple[str, str]]:
+    """Return (original_line, normalized_key) pairs, skipping noise lines."""
+    result = []
+    for line in raw_lines:
+        stripped = line.rstrip("\n")
+        if not stripped.strip():
+            continue
+        norm = _TIMESTAMP_RE.sub("", stripped).strip()
+        if not norm or _SKIP_RE.match(norm):
+            continue
+        result.append((stripped, norm))
+    return result
+
+
+def find_repeating_patterns(
+    text: str, threshold: int = REPEAT_THRESHOLD
+) -> list[dict]:
+    """Detect groups of consecutive lines that repeat many times.
+
+    Returns a list of dicts:
+        {"count": int, "raw_lines": [str, ...]}
+    Each raw_lines entry is one occurrence (with original timestamps).
+    Only patterns repeating >= *threshold* times are returned.
+    Overlapping / subset patterns are pruned so only the most informative
+    grouping is kept.
+    """
+    raw_lines = text.splitlines()
+    content = _content_lines(raw_lines)
+    if not content:
+        return []
+
+    # Collect candidates for group sizes 1..4
+    candidates: list[tuple[tuple[str, ...], int, list[str]]] = []
+    for group_size in range(1, 5):
+        counts: dict[tuple[str, ...], int] = {}
+        first_raw: dict[tuple[str, ...], list[str]] = {}
+        for i in range(len(content) - group_size + 1):
+            key = tuple(content[i + j][1] for j in range(group_size))
+            counts[key] = counts.get(key, 0) + 1
+            if key not in first_raw:
+                first_raw[key] = [content[i + j][0] for j in range(group_size)]
+
+        for key, count in counts.items():
+            if count >= threshold:
+                candidates.append((key, count, first_raw[key]))
+
+    # Prune overlapping patterns to keep the most informative grouping.
+    # Strategy: process from smallest to largest. A larger pattern is dropped
+    # if its distinct lines are already fully covered by a smaller kept pattern
+    # (i.e. it's just the small cycle repeated). Single-line patterns that
+    # appear in a multi-line kept pattern are also dropped.
+    candidates.sort(key=lambda c: len(c[0]))
+    kept: list[tuple[tuple[str, ...], int, list[str]]] = []
+    for key, count, raw in candidates:
+        key_set = set(key)
+        # Skip if a smaller (or equal-size) kept pattern already covers all
+        # distinct lines of this candidate
+        if any(key_set <= set(k) for k, _, _ in kept if len(k) <= len(key)):
+            continue
+        kept.append((key, count, raw))
+
+    # Drop single-line entries whose line is in a multi-line kept pattern
+    multi_lines = set()
+    for key, _, _ in kept:
+        if len(key) > 1:
+            multi_lines.update(key)
+    kept = [(k, c, r) for k, c, r in kept if len(k) > 1 or k[0] not in multi_lines]
+
+    results = [{"count": count, "raw_lines": raw} for _, count, raw in kept]
+    # Sort by count descending
+    results.sort(key=lambda r: r["count"], reverse=True)
+    return results
+
+
+def find_repeating_patterns_from_file(
+    file_path: str, threshold: int = REPEAT_THRESHOLD
+) -> list[dict]:
+    with open(file_path, "r", encoding="utf-8") as f:
+        text = f.read()
+    return find_repeating_patterns(text, threshold)
+
+
 def format_failed_cases_for_display(
     failed_cases: list[dict],
     width: int = 110,
