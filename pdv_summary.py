@@ -488,8 +488,7 @@ def _build_log_filename(console_url: str, label: str, profile: dict) -> str:
     )
 
 
-# Statuses that warrant Jenkins log analysis
-_AUTO_ANALYZE_STATUSES = {"FAILURE"}             # fetch logs automatically
+_AUTO_ANALYZE_STATUSES = {"FAILURE", "BLOCKED"}             # fetch logs automatically
 _PROMPT_ANALYZE_STATUSES = {"APPROVED"}          # ask user first
 _ALL_ANALYZE_STATUSES = _AUTO_ANALYZE_STATUSES | _PROMPT_ANALYZE_STATUSES
 MAX_XPAS_DOWNLOAD_THREADS = 15

@@ -26,6 +26,8 @@ def _colorize_status(text: str) -> str:
     up = text.strip().upper()
     if up == "FAILURE":
         return f"{_RED}{text}{_RESET}"
+    if up == "BLOCKED":
+        return f"{_RED}{text}{_RESET}"
     if up in ("SUCCESS", "APPROVED", "DEPLOYED"):
         return f"{_GREEN}{text}{_RESET}"
     if up in ("QUEUE", "QUEUED", "RUNNING", "IN_PROGRESS"):
