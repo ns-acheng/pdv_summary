@@ -1285,6 +1285,18 @@ def main():
             selected_days = days
         else:
             matched = _match_days(days, env_arg, num_arg)
+            if not matched:
+                # No matching days — try syncing new release days from the API
+                day_desc = f"{env_arg} day {num_arg}" if num_arg else env_arg
+                print(
+                    f"[sync] No '{day_desc}' days found for {version}. "
+                    "Syncing from API ..."
+                )
+                token = load_token()
+                do_sync_releases(token, version_filter=version)
+                releases = load_releases()
+                days = releases.get(version, {}).get("days", [])
+                matched = _match_days(days, env_arg, num_arg)
             selected_days = matched if matched else choose_days(days)
     else:
         selected_days = choose_days(days)
