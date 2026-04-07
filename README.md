@@ -24,19 +24,20 @@ Just run `pdv_parser.py` as normal. On a missing/expired token it will:
 3. Fall back to a manual paste prompt only if the browser fetch fails
 
 2. **Releases**: Release versions and their day mappings are defined in `data/releases.json`. 
-   - Use `--sync-releases` **with a version** to auto-discover release days from the API (see below).
+   - Release days are auto-synced from the API when a requested version or env/day is not found locally.
    - Alternatively, manually add entries to `releases.json` if needed.
 
 3. **DC Mapping**: Manual datacenter GUID → name mappings live in `data/dc_mapping.json`. Add entries as you discover them.
 
 ---
 
-## Syncing Releases from API
+## Auto-Syncing Releases
 
-Release day mappings (`release_day_id` per version/day) are maintained in `data/releases.json`. Rather than manually editing this file, use the `--sync-releases` flag with an explicit version (for example `136.0`) to auto-discover release days from the Insights Platform API.
+Release day mappings (`release_day_id` per version/day) are maintained in `data/releases.json`. When you request a version or env/day that isn't in the local file, the tool automatically syncs from the Insights Platform API.
 
-> **Invalid command:** `python pdv_summary.py --sync-releases`  
-> Global/all-version sync is not supported.
+**Auto-sync triggers:**
+- Version not in `releases.json` → syncs that version's release days
+- Version exists but requested env/day not found (e.g. `prod` days not yet available) → re-syncs that version
 
 **How it works:**
 - Queries the release-management API to list all release versions
@@ -44,8 +45,6 @@ Release day mappings (`release_day_id` per version/day) are maintained in `data/
 - Maps API `dayId` → day name and `typeId` → environment (prod/preprod)
 - Builds the standard release label (e.g. "prod day 4", "staging") and release_day_id
 - Merges results into `releases.json` (existing entries are preserved)
-
-See the unified **Usage & Example Sessions** section below for all commands.
 
 ---
 
@@ -55,7 +54,7 @@ See the unified **Usage & Example Sessions** section below for all commands.
 All arguments are optional. If omitted, an interactive menu is shown.
 
 ```
-python pdv_summary.py [version] [env] [day_number] [--show-all-comp] [--sync-releases] [--dc DATACENTER]
+python pdv_summary.py [version] [env] [day_number] [--show-all-comp] [--dc DATACENTER]
 ```
 
 ### Common runs
@@ -84,8 +83,8 @@ python pdv_summary.py 135.0 prod --show-all-comp
 # Cache-only datacenter lookup
 python pdv_summary.py 135.0 --dc DFW3
 
-# Sync release days for a new version (e.g. 136.0)
-python pdv_summary.py 136.0 --sync-releases
+# New version — auto-syncs release days from API
+python pdv_summary.py 136.0 prod
 ```
 
 `--dc` mode reads cached `cache/component_data_<version>_*.json` files (no live API fetch),
@@ -101,7 +100,6 @@ corresponding logs exist in `cache-xpas/`.
 | `day_number` | `1`, `2`, `3`, `4` | Day number (for `preprod` or `prod`) |
 | `--show-all-comp` | (flag) | Show all components (default: only client/nsclient) |
 | `--dc` | e.g. `DFW3` | Cache-only datacenter query for a release version; outputs client/nsclient rows and checks `cache-xpas` logs |
-| `--sync-releases` | (flag) | Sync release days for the specified `version` only. `python pdv_summary.py --sync-releases` is invalid |
 
 ## Output example
 <img width="1567" height="821" alt="image" src="https://github.com/user-attachments/assets/f69afb2e-db78-4726-a950-a7318ee9c5aa" />

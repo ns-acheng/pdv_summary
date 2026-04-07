@@ -18,8 +18,8 @@ python pdv_summary.py
 # Specific version/env/day
 python pdv_summary.py 135.0 prod 4
 
-# Sync release days from API (version required)
-python pdv_summary.py 136.0 --sync-releases
+# New version — auto-syncs release days from API
+python pdv_summary.py 136.0 prod
 
 # Cache-only datacenter lookup
 python pdv_summary.py 135.0 --dc DFW3
