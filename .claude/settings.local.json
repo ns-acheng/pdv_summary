@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(pip list:*)",
+      "Bash(iconv -f UTF-16LE -t UTF-8 /c/temp/dr_list.txt)",
+      "Bash(iconv -f UTF-16LE -t UTF-8 /c/temp/forensics_20260402_202812.txt)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
