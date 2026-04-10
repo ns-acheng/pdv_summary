@@ -112,3 +112,60 @@ corresponding logs exist in `cache-xpas/`.
 | NSClient d5f1 | `d5f1a252-05e9-4679-9be1-aaecd106de1a` |
 | NSClient 0d05 | `0d055ea2-fcaa-4c60-94b0-c3165a8956b8` |
 | Client 3380 | `33809b17-a76b-4531-b8fd-272e5a90680b` |
+
+---
+
+## Jenkins Log Analyzer
+
+`jenkins_log_analyze.py` is a standalone tool to fetch and analyze a Jenkins job log directly by URL, without needing a PDV release context.
+
+### Usage
+
+```bash
+python jenkins_log_analyze.py --url "<jenkins_job_url>"
+```
+
+### Examples
+
+```bash
+# Analyze a specific MPAS job
+python jenkins_log_analyze.py --url "https://cqejenkins-xpas-prod03.netskope.io/job/MPAS/11934/"
+
+# Disable TLS verification (debug/internal CAs)
+python jenkins_log_analyze.py --url "https://cqejenkins-xpas-prod03.netskope.io/job/MPAS/11934/" --insecure
+
+# Custom HTTP timeout
+python jenkins_log_analyze.py --url "https://cqejenkins-xpas-prod03.netskope.io/job/MPAS/11934/" --timeout 120
+```
+
+The URL can be the base job URL (`.../job/MPAS/11934/`), or include any console suffix (`/console`, `/consoleFull`, `/consoleText`) — it normalizes automatically.
+
+### What it does
+
+1. Auto-extracts a browser cookie from the Chrome debug session (port 9222) for the Jenkins hostname
+2. Fetches the `consoleFull` HTML page, parses the `consoleText` link, and downloads the plain-text log
+3. Saves the log to `cache-xpas/xpas_console_<JOB>_<BUILD>.txt`
+4. Parses and displays failed test cases from the pytest short summary section, or detects repeating failure patterns as a fallback
+
+### Prerequisites
+
+Chrome must be running with remote debugging enabled and have the target Jenkins site open and logged in:
+
+```bash
+# Windows — close all existing Chrome windows first, then:
+start chrome --user-data-dir="local_profile" --remote-debugging-port=9222 "https://cqejenkins-xpas-prod03.netskope.io/"
+```
+
+### Example output
+
+```
+[jenkins] Fetching Jenkins log for MPAS #11934 ...
+[jenkins] Saved plain-text log to: cache-xpas\xpas_console_MPAS_11934.txt
+[jenkins] Retrieved 85234 characters of plain text.
+[jenkins] Found 9 failed case(s):
+[jenkins] 1. nsclient_tests/tests/api/test_client_mpas.py::TestGeneralRegression::test_02_client_status_events
+[jenkins]    - TypeError: '>' not supported between instances of 'NoneType' and 'int'
+[jenkins] 2. nsclient_tests/tests/api/test_client_mpas.py::TestGeneralRegression::test_07_exception_domains
+[jenkins]    - Exception: Config update did not succeed
+...
+```
