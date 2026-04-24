@@ -21,7 +21,9 @@ from urllib.parse import urljoin, urlparse
 import time
 
 import requests
+from requests.exceptions import ConnectionError as RequestsConnectionError
 from util_browser import DEBUG_URL
+from util_browser import fetch_content_from_browser
 from util_browser import get_tabs
 from util_browser import get_cookie_from_browser
 from util_output import print_xpas_failed_cases
@@ -90,6 +92,53 @@ def fetch_console_full(
     response = requests.get(url, headers=headers, timeout=timeout, verify=verify_ssl)
     response.raise_for_status()
     return response.text
+
+
+def fetch_console_with_fallback(
+    url: str,
+    cookie: str,
+    timeout: int,
+    verify_ssl: bool,
+    *,
+    as_text: bool,
+    prefix: str,
+) -> str:
+    """Try direct HTTP first; fallback to Chrome/CDP page extraction on
+    DNS/connection failures."""
+    try:
+        return fetch_console_full(
+            url=url,
+            cookie=cookie,
+            timeout=timeout,
+            verify_ssl=verify_ssl,
+        )
+    except RequestsConnectionError as exc:
+        msg = str(exc)
+        is_dns_error = "NameResolutionError" in msg or "getaddrinfo failed" in msg
+        if is_dns_error:
+            print(f"{prefix} Direct HTTP DNS failed; falling back to browser fetch ...")
+        else:
+            print(f"{prefix} Direct HTTP connection failed; falling back to browser fetch ...")
+
+        browser_text = fetch_content_from_browser(
+            url,
+            as_text=as_text,
+            prefix=prefix,
+        )
+        if browser_text:
+            print(f"{prefix} Browser fallback succeeded for: {url}")
+            return browser_text
+
+        print(
+            f"{prefix} Browser fallback did not return page content. "
+            "Open the same URL in the Chrome debug session (port 9222) and retry."
+        )
+        print(
+            f"{prefix} If needed, save Jenkins page HTML and use --from-html-file "
+            "to continue parsing consoleText."
+        )
+
+        raise
 
 
 def extract_console_text_href(html_text: str) -> str | None:
@@ -238,11 +287,13 @@ def fetch_and_analyze(
                     print(f"{prefix} Could not obtain Jenkins cookie from browser.")
                     return None
 
-            html_text = fetch_console_full(
+            html_text = fetch_console_with_fallback(
                 url=clean_url,
                 cookie=cookie,
                 timeout=timeout,
                 verify_ssl=verify_ssl,
+                as_text=False,
+                prefix=prefix,
             )
             html_source = save_output(
                 clean_url, html_text, None, prefix="xpas_console", extension="log"
@@ -260,11 +311,13 @@ def fetch_and_analyze(
                     remove_html_if_needed(html_source, False)
                 return None
 
-            plain_text = fetch_console_full(
+            plain_text = fetch_console_with_fallback(
                 url=plain_url,
                 cookie=cookie,
                 timeout=timeout,
                 verify_ssl=verify_ssl,
+                as_text=True,
+                prefix=prefix,
             )
             txt_output_path = None
             if output_text_filename:
@@ -332,6 +385,24 @@ def fetch_and_analyze(
                     "run the tool again."
                 )
             return None
+        except RequestsConnectionError as exc:
+            msg = str(exc)
+            if "NameResolutionError" in msg or "getaddrinfo failed" in msg:
+                print(f"{prefix} Failed to fetch/analyze Jenkins log: {exc}")
+                print(
+                    f"{prefix} DNS resolution failed in Python for Jenkins host '{current_fqdn}'."
+                )
+                print(
+                    f"{prefix} Browser access can still work if Chrome is using proxy/PAC/secure-DNS "
+                    "while Python uses OS DNS directly."
+                )
+                print(
+                    f"{prefix} Please verify VPN/network DNS, or configure HTTPS_PROXY for this shell, "
+                    "then retry."
+                )
+                return None
+            print(f"{prefix} Failed to fetch/analyze Jenkins log: {exc}")
+            return None
         except Exception as exc:
             print(f"{prefix} Failed to fetch/analyze Jenkins log: {exc}")
             return None
@@ -354,11 +425,13 @@ def test_main() -> None:
             html_source = args.from_html_file
             print(f"[util_xpas] Loaded HTML from: {html_source}")
         else:
-            html_text = fetch_console_full(
+            html_text = fetch_console_with_fallback(
                 url=args.url,
                 cookie=cookie,
                 timeout=args.timeout,
                 verify_ssl=not args.insecure,
+                as_text=False,
+                prefix="[util_xpas]",
             )
             html_source = save_output(
                 args.url,
@@ -373,11 +446,13 @@ def test_main() -> None:
         if not plain_url:
             raise ValueError("consoleText link not found in HTML.")
 
-        plain_text = fetch_console_full(
+        plain_text = fetch_console_with_fallback(
             url=plain_url,
             cookie=cookie,
             timeout=args.timeout,
             verify_ssl=not args.insecure,
+            as_text=True,
+            prefix="[util_xpas]",
         )
         saved_text = save_output(
             plain_url,

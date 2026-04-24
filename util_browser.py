@@ -14,6 +14,7 @@ import json
 import os
 import subprocess
 import time
+from urllib.parse import quote
 from urllib.parse import urlparse
 
 import requests
@@ -247,6 +248,120 @@ def get_cookie_from_browser(
 
     print(f"{prefix} Cookie loaded from browser for host: {target_host}")
     return cookie_value
+
+
+def _create_debug_tab_for_url(
+    url: str,
+    debug_url: str = DEBUG_URL,
+    prefix: str = "[util_browser]",
+) -> dict | None:
+    """Create a fresh Chrome debug tab for URL and return tab metadata."""
+    base = debug_url.rsplit("/json", 1)[0]
+    encoded_url = quote(url, safe=":/?&=#%")
+    new_tab_url = f"{base}/json/new?{encoded_url}"
+    try:
+        # Chrome DevTools supports PUT /json/new?{url}
+        resp = requests.put(new_tab_url, timeout=8)
+        if resp.status_code != 200:
+            print(
+                f"{prefix} Could not create debug tab (status={resp.status_code}); "
+                "will try existing tab."
+            )
+            return None
+        tab = resp.json()
+        if isinstance(tab, dict):
+            return tab
+    except Exception as exc:
+        print(f"{prefix} Failed to create debug tab: {exc}")
+    return None
+
+
+def fetch_content_from_browser(
+    url: str,
+    *,
+    as_text: bool = False,
+    debug_url: str = DEBUG_URL,
+    prefix: str = "[util_browser]",
+    load_wait: int = 20,
+) -> str | None:
+    """Navigate a Chrome tab to *url* via CDP and return page content.
+
+    - as_text=False: returns full HTML (documentElement.outerHTML)
+    - as_text=True : returns visible text (for consoleText/plain pages)
+    """
+    target_host = urlparse(url).hostname
+    if not target_host:
+        return None
+
+    created_tab = _create_debug_tab_for_url(url, debug_url=debug_url, prefix=prefix)
+    candidate_tabs: list[dict] = []
+    if created_tab:
+        candidate_tabs.append(created_tab)
+
+    existing_tab = ensure_target_tab(
+        target_host,
+        launch_url=url,
+        debug_url=debug_url,
+        prefix=prefix,
+        tab_wait=60,
+    )
+    if existing_tab:
+        candidate_tabs.append(existing_tab)
+
+    if not candidate_tabs:
+        return None
+
+    for target_tab in candidate_tabs:
+        ws_url = target_tab.get("webSocketDebuggerUrl")
+        if not ws_url:
+            continue
+
+        try:
+            ws = websocket.create_connection(ws_url, timeout=12)
+            ws.settimeout(2.0)
+
+            ws_send_and_wait(ws, 1, "Page.enable")
+            ws_send_and_wait(ws, 2, "Runtime.enable")
+            ws_send_and_wait(ws, 3, "Page.navigate", {"url": url})
+
+            # Best-effort wait for page load event.
+            deadline = time.time() + max(1, load_wait)
+            while time.time() < deadline:
+                try:
+                    message = json.loads(ws.recv())
+                except websocket.WebSocketTimeoutException:
+                    continue
+                if message.get("method") == "Page.loadEventFired":
+                    break
+
+            if as_text:
+                expression = (
+                    "(function(){"
+                    "var b=document.body?document.body.innerText:'';"
+                    "if(b&&b.length)return b;"
+                    "return document.documentElement?document.documentElement.innerText:'';"
+                    "})()"
+                )
+            else:
+                expression = "document.documentElement ? document.documentElement.outerHTML : ''"
+
+            resp = ws_send_and_wait(
+                ws,
+                4,
+                "Runtime.evaluate",
+                {"expression": expression, "returnByValue": True},
+            )
+            ws.close()
+        except Exception as exc:
+            print(f"{prefix} Failed to fetch page content from browser tab: {exc}")
+            continue
+
+        value = resp.get("result", {}).get("result", {}).get("value")
+        if isinstance(value, str) and value.strip():
+            return value
+
+    print(f"{prefix} Browser returned empty page content for: {url}")
+    return None
 
 
 def get_token_from_browser(
