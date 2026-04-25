@@ -614,13 +614,24 @@ def _download_prepared_component(
     print(f"{prefix}   Latest FAILURE run: createdAt={created_at}")
     print(f"{prefix}   Jenkins URL: {console_url}")
 
-    return fetch_and_analyze(
+    saved_log = fetch_and_analyze(
         console_url,
         cookie=cookie,
         prefix=prefix,
         concise_output=True,
         output_text_filename=log_filename,
     )
+
+    if saved_log:
+        log_name = os.path.basename(saved_log)
+        analyzed_rel_path = os.path.join("cache-xpas", log_name)
+        print(
+            f"{prefix} Analyzing FAILED cases from "
+            f"{_LIGHT_BROWN}{analyzed_rel_path}{_RESET} ..."
+        )
+        print_xpas_failed_cases(saved_log, prefix=prefix)
+
+    return saved_log
 
 
 def _download_components_serial_then_parallel(
@@ -1310,9 +1321,8 @@ def main():
     dc_names = load_dc_cache()
 
     approved_choice: bool | None = None
-    all_downloaded_logs: list[tuple[int, str, str]] = []
     for day in selected_days:
-        token, approved_choice, day_logs = process_day(
+        token, approved_choice, _day_logs = process_day(
             version,
             day,
             token,
@@ -1320,10 +1330,6 @@ def main():
             show_all_comp=args.show_all_comp,
             approved_choice=approved_choice,
         )
-        all_downloaded_logs.extend(day_logs)
-
-    # Parse FAILED cases once, after all selected days are processed.
-    parse_downloaded_logs(all_downloaded_logs)
 
     print(f"\n{'='*70}")
     print(f"  Done. Processed {len(selected_days)} day(s) for release {version}.")
