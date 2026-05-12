@@ -2592,5 +2592,15 @@
         "dashboard": "release"
       }
     ]
+  },
+  "137.1": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 1479,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      }
+    ]
   }
 }

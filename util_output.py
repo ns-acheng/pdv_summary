@@ -165,7 +165,7 @@ def _build_dc_rows(datacenters: dict, dc_names: dict):
     # Insert Type as the first column
     if has_names:
         headers = [
-            "Type", "Datacenter", "DC UUID (short)", "Enabled",
+            "Type", "Datacenter", "DC UUID", "Enabled",
             "PDV Status", "PDV Notes",
             "Deploy Status", "Deploy Version",
         ]
@@ -192,7 +192,7 @@ def _build_dc_rows(datacenters: dict, dc_names: dict):
             rows.append([
                 type_val,
                 _colorize_datacenter(dc_names.get(dc_id, "(unknown)")),
-                dc_id[:12] + "...",
+                dc_id,
                 str(dc_info.get("enabled", "")),
                 pdv_status,
                 pdv_notes,
