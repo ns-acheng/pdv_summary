@@ -2600,6 +2600,36 @@
         "release_day_id": 1479,
         "env": "preprod",
         "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1480,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1481,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1482,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1483,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1484,
+        "env": "prod",
+        "dashboard": "release"
       }
     ]
   }
