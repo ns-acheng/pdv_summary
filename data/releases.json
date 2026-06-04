@@ -2632,5 +2632,51 @@
         "dashboard": "release"
       }
     ]
+  },
+  "138.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 1511,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1505,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 1506,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1507,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1508,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1509,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1510,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
   }
 }
