@@ -8,6 +8,7 @@ import os
 import sys
 from datetime import datetime
 from util_browser import get_cookie_from_browser, get_token_from_browser
+from util_dc_name import fetch_dc_names, load_dc_cache, resolve_unknown_dc_names
 from util_output import print_all_components, print_xpas_failed_cases
 from util_xpas import fetch_and_analyze, parse_job_build
 
@@ -778,141 +779,10 @@ def fetch_with_retry(token: str, profile: dict):
 
 # ── Datacenter name resolution ────────────────────────────────────────────────
 
-def fetch_dc_names(token: str, profile: dict, verbose: bool = True) -> dict:
-    """
-    Try several API endpoints to discover datacenter GUID -> name mapping.
-    Uses both release-management and PDV endpoints from the API spec.
-    Returns {guid: name} dict.  Falls back to empty dict.
-    """
-    rid = profile["release_day_id"]
-    dash = profile.get("dashboard", "release")
-    rtype = profile.get("releaseType", "prod")
-    rver = profile.get("releaseVersion", "")
-    rday = profile.get("releaseDay", "day1")
-
-    # Build a list of (label, url) pairs to probe
-    candidate_urls = [
-        # Release-management service endpoints
-        ("release_days/{id}",
-         f"{BASE_API}/release_days/{rid}"),
-        ("release_days/{id}/datacenters",
-         f"{BASE_API}/release_days/{rid}/datacenters"),
-        ("datacenters",
-         f"{BASE_API}/datacenters"),
-        ("components",
-         f"{BASE_API}/components"),
-        # PDV endpoints (from API spec)
-        ("pdv/serviceDc",
-         f"{BASE_API}/pdv/serviceDc/{dash}/{rtype}/{rver}/{rday}"),
-        ("pdv/applications",
-         f"{BASE_API}/pdv/applications/{dash}/{rtype}/{rver}/{rday}"),
-        ("pdv/releases",
-         f"{BASE_API}/pdv/releases/{dash}?releaseType={rtype}"),
-        ("pdv/summary (no app)",
-         f"{BASE_API}/pdv/summary/{dash}/{rtype}/{rver}/{rday}"),
-        ("pdv/signoff",
-         f"{BASE_API}/pdv/signoff/{dash}/{rtype}/{rver}/{rday}"),
-    ]
-
+def _fetch_dc_names_for_profile(token: str, profile: dict, verbose: bool = True) -> dict:
+    """Adapter to call util_dc_name.fetch_dc_names with current request headers."""
     hdrs = _headers(token, profile["x_auth_params"])
-    combined = {}
-    got_403 = False
-
-    for label, url in candidate_urls:
-        try:
-            resp = requests.get(url, headers=hdrs, timeout=15)
-            if verbose:
-                print(f"    [{resp.status_code}] {label}: {url}")
-            if resp.status_code == 403:
-                got_403 = True
-            if resp.status_code != 200:
-                continue
-            data = resp.json()
-            mapping = _extract_dc_mapping(data)
-            if mapping:
-                combined.update(mapping)
-                if verbose:
-                    print(f"           -> found {len(mapping)} GUID-name pair(s)")
-            else:
-                if verbose:
-                    # Print response body for 200s that yielded no mapping
-                    text = json.dumps(data, indent=2)
-                    if len(text) > 2000:
-                        text = text[:2000] + "\n... (truncated)"
-                    print(f"           -> response (no GUID-name pairs):\n{text}")
-            # Also save the raw probe response for debugging
-            probe_file = os.path.join(CACHE_DIR, f"probe_{label.replace('/', '_')}.json")
-            with open(probe_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
-        except Exception as exc:
-            if verbose:
-                print(f"    [ERR]  {label}: {exc}")
-            continue
-
-    if got_403 and not combined:
-        raise requests.exceptions.HTTPError(
-            "403 Forbidden during DC name resolution",
-            response=type('R', (), {'status_code': 403})()
-        )
-    return combined
-
-
-def _extract_dc_mapping(data, mapping=None) -> dict:
-    """Recursively search JSON for objects that have both an 'id' (UUID-like)
-    and a 'name' / 'dcName' / 'datacenterName' / 'label' field."""
-    if mapping is None:
-        mapping = {}
-    if isinstance(data, dict):
-        # Try multiple key combinations for id
-        obj_id = (
-            data.get("id") or data.get("datacenterId")
-            or data.get("uuid") or data.get("dc_id")
-        )
-        # Try multiple key combinations for name
-        obj_name = (
-            data.get("name") or data.get("datacenterName")
-            or data.get("dcName") or data.get("dc_name")
-            or data.get("label") or data.get("dcname")
-        )
-        if (
-            isinstance(obj_id, str)
-            and len(obj_id) == 36
-            and "-" in obj_id
-            and isinstance(obj_name, str)
-            and obj_name
-        ):
-            mapping[obj_id] = obj_name
-        for v in data.values():
-            _extract_dc_mapping(v, mapping)
-    elif isinstance(data, list):
-        for item in data:
-            _extract_dc_mapping(item, mapping)
-    return mapping
-
-
-def load_dc_cache() -> dict:
-    """Load DC names: start from auto-discovered cache, then overlay
-    the manual mapping from data/dc_mapping.json (takes priority)."""
-    result = {}
-    # Auto-discovered cache (purgeable)
-    if os.path.isfile(DC_CACHE_FILE):
-        try:
-            result.update(json.load(open(DC_CACHE_FILE, "r", encoding="utf-8")))
-        except Exception:
-            pass
-    # Manual mapping (authoritative, in data/)
-    if os.path.isfile(DC_MAPPING_FILE):
-        try:
-            result.update(json.load(open(DC_MAPPING_FILE, "r", encoding="utf-8")))
-        except Exception:
-            pass
-    return result
-
-
-def save_dc_cache(mapping: dict):
-    ensure_data_dir()
-    with open(DC_CACHE_FILE, "w", encoding="utf-8") as f:
-        json.dump(mapping, f, indent=2)
+    return fetch_dc_names(token, profile, headers=hdrs, cache_dir=CACHE_DIR, verbose=verbose)
 
 
 # ── Data extraction & display ─────────────────────────────────────────────────
@@ -1060,6 +930,18 @@ def process_day(
     # Extract & display
     all_apps = extract_all_components(data, include_all=show_all_comp)
 
+    # Auto-resolve unknown/missing datacenter names before rendering output
+    new_token, dc_names, _resolved_count = resolve_unknown_dc_names(
+        new_token,
+        profile,
+        all_apps,
+        dc_names,
+        fetch_dc_names_func=_fetch_dc_names_for_profile,
+        refresh_token_func=refresh_token,
+        dc_mapping_file=DC_MAPPING_FILE,
+        dc_cache_file=DC_CACHE_FILE,
+    )
+
     print(f"\n{'#'*70}")
     print(f"  {version} / {label}  (release_day_id={rid})")
     print(f"{'#'*70}")
@@ -1192,7 +1074,7 @@ def show_cached_datacenter_view(version: str, dc_query: str, show_all_comp: bool
         print(f"[cache] No component_data cache files found for version {version}.")
         return
 
-    dc_names = load_dc_cache()
+    dc_names = load_dc_cache(DC_CACHE_FILE, DC_MAPPING_FILE)
     found_any = False
 
     print(f"\n{'='*70}")
@@ -1318,7 +1200,7 @@ def main():
     print(f"{'='*70}")
 
     token = load_token()
-    dc_names = load_dc_cache()
+    dc_names = load_dc_cache(DC_CACHE_FILE, DC_MAPPING_FILE)
 
     approved_choice: bool | None = None
     for day in selected_days:

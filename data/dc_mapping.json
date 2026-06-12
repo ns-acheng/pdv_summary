@@ -1,7 +1,7 @@
 {
   "5b628a05-89a7-49cb-aa83-b51bd9cb908c": "pbmm-mp-prod",
   "0e9267b0-61ee-48a5-8fbf-59da9641ab7a": "fed-mp-prod",
-  "0059aec6-b556-4fc6-9966-4e00fb2609f4": "UNKOWN",
+  "0059aec6-b556-4fc6-9966-4e00fb2609f4": "RTM2",
   "01a923f0-3345-45a2-8e1e-654f7e138453": "MAD2",
   "56a82ef7-7cfd-4b1d-bba0-8d557a53dafd": "FRA3",
   "0546e3eb-f60e-4539-ab82-f524ca68ca2e": "IAD5",
@@ -162,5 +162,6 @@
   "57b4ddc3-b620-4511-a032-157cdac6fb41": "fed-mp-preprod",
   "cb42e03b-46fa-4a27-9867-c5572ebb3413": "fed02-dp-preprod",
   "5d2345f7-0957-4b70-84e8-45fae2be752c": "stg01-mp-npe",
-  "a915fee9-4536-4f8b-8573-961a31b18d00": "stg01-dp-npe"
+  "a915fee9-4536-4f8b-8573-961a31b18d00": "stg01-dp-npe",
+  "aa1dfe94-9f00-447b-bcb0-8e8c8a9c87a4": "JKT1"
 }

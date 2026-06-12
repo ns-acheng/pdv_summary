@@ -29,24 +29,6 @@ Just run `pdv_parser.py` as normal. On a missing/expired token it will:
 
 3. **DC Mapping**: Manual datacenter GUID → name mappings live in `data/dc_mapping.json`. Add entries as you discover them.
 
----
-
-## Auto-Syncing Releases
-
-Release day mappings (`release_day_id` per version/day) are maintained in `data/releases.json`. When you request a version or env/day that isn't in the local file, the tool automatically syncs from the Insights Platform API.
-
-**Auto-sync triggers:**
-- Version not in `releases.json` → syncs that version's release days
-- Version exists but requested env/day not found (e.g. `prod` days not yet available) → re-syncs that version
-
-**How it works:**
-- Queries the release-management API to list all release versions
-- For each version, fetches the release days on dashboards 1 (prod/preprod) and 16 (staging)
-- Maps API `dayId` → day name and `typeId` → environment (prod/preprod)
-- Builds the standard release label (e.g. "prod day 4", "staging") and release_day_id
-- Merges results into `releases.json` (existing entries are preserved)
-
----
 
 
 ## Usage & Example Sessions
