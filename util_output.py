@@ -2,6 +2,7 @@ import re
 from util_log import format_failed_cases_for_display
 from util_log import parse_failed_cases_from_file
 from util_log import find_repeating_patterns_from_file
+from util_log import analyze_tunnel_health_from_file
 
 MAX_COL_WIDTH = 50   # hard cap on any single column width
 
@@ -243,6 +244,62 @@ def print_all_components(all_apps: dict, dc_names: dict, target_components: dict
             _print_table(title, headers, rows)
 
 
+def _print_tunnel_diagnosis(diag: dict, prefix: str) -> None:
+    """Print NSClient tunnel/TLS RCA block produced by analyze_tunnel_health."""
+    headline = diag.get("headline", "Tunnel issue detected")
+    conclusion = diag.get("conclusion", "")
+    state_counts = diag.get("state_counts", {})
+    gateways = diag.get("gateways", [])
+    tls_failures = diag.get("tls_failures", [])
+    setup_fails = diag.get("tunnel_setup_failures", 0)
+    retry_cycles = diag.get("retry_cycles", 0)
+    final_state = diag.get("final_state", "")
+    final_failed = diag.get("final_state_failed", False)
+
+    print(f"{prefix} {_RED}[RCA] NSClient tunnel diagnosis{_RESET}")
+    print(f"{prefix}   {_RED}{headline}{_RESET}")
+
+    if state_counts:
+        parts = []
+        for state, count in sorted(state_counts.items(),
+                                   key=lambda kv: -kv[1]):
+            color = (
+                _GREEN if state == "NSTUNNEL_CONNECTED"
+                else _RED if state == "NSTUNNEL_DISCONNECTED_ERROR"
+                else _YELLOW
+            )
+            parts.append(f"{color}{state}{_RESET}={count} polls")
+        print(f"{prefix}   Status polls: " + ", ".join(parts))
+
+    if final_state:
+        fs_color = _RED if final_failed else _GREEN
+        hint = diag.get("final_state_hint", "")
+        hint_suffix = f" — {hint}" if hint else ""
+        print(
+            f"{prefix}   Retry cycles: {retry_cycles}; "
+            f"last observed state: {fs_color}{final_state}{_RESET}{hint_suffix}"
+        )
+
+    if gateways:
+        gw_text = ", ".join(gateways)
+        print(f"{prefix}   Gateway: {_LIGHT_BROWN}{gw_text}{_RESET}")
+
+    for fail in tls_failures:
+        suffix = " (WSAETIMEDOUT)" if fail.get("err") == "10060" else ""
+        print(
+            f"{prefix}   {_RED}nsssl TLS connect failed{_RESET} -> "
+            f"{fail.get('target')} err={fail.get('err')}{suffix}"
+        )
+
+    if setup_fails:
+        print(
+            f"{prefix}   {_RED}tunnel.cpp SSL tunnel setup failed{_RESET} "
+            f"x{setup_fails}"
+        )
+
+    print(f"{prefix}   {_YELLOW}Conclusion: {conclusion}{_RESET}")
+
+
 def print_xpas_failed_cases(log_path: str, prefix: str = "[util_xpas]") -> None:
     """Print XPAS failed test cases from short test summary info.
 
@@ -250,9 +307,19 @@ def print_xpas_failed_cases(log_path: str, prefix: str = "[util_xpas]") -> None:
             - test_<number>...
             - ClassName::test_...
         Falls back to repeating-pattern detection when no pytest summary exists.
+        Always runs the NSClient tunnel/TLS RCA pass first when telemetry is
+        present (e.g. tunnel cycles CONNECTING -> DISCONNECTED_ERROR without
+        ever reaching CONNECTED).
     """
+    tunnel_diag = analyze_tunnel_health_from_file(log_path)
+    if tunnel_diag:
+        _print_tunnel_diagnosis(tunnel_diag, prefix)
+
     failed_cases = parse_failed_cases_from_file(log_path)
     if not failed_cases:
+        if tunnel_diag:
+            # Tunnel RCA already explains the failure — don't dump noise.
+            return
         # Fallback: detect repeating patterns (e.g. tunnel connect loops)
         patterns = find_repeating_patterns_from_file(log_path)
         if patterns:

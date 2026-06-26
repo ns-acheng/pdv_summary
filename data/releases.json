@@ -2678,5 +2678,63 @@
         "dashboard": "release"
       }
     ]
+  },
+  "139.0": {
+    "days": [
+      {
+        "label": "staging",
+        "release_day_id": 1555,
+        "env": "preprod",
+        "dashboard": "staging-release"
+      },
+      {
+        "label": "preprod day 1",
+        "release_day_id": 1575,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "preprod day 2",
+        "release_day_id": 1576,
+        "env": "preprod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 1",
+        "release_day_id": 1577,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 2",
+        "release_day_id": 1578,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 3",
+        "release_day_id": 1579,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 4",
+        "release_day_id": 1580,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 5",
+        "release_day_id": 1581,
+        "env": "prod",
+        "dashboard": "release"
+      },
+      {
+        "label": "prod day 6",
+        "release_day_id": 1582,
+        "env": "prod",
+        "dashboard": "release"
+      }
+    ]
   }
 }
